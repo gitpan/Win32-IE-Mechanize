@@ -1,0 +1,16 @@
+MANIFEST                   $Id: MANIFEST 124 2004-03-28 17:05:17Z abeltje $
+README
+Makefile.PL
+lib/Win32/IE/Mechanize.pm
+t/basic.t
+t/find_link.t
+t/formbasics.t
+t/jstest.t
+t/tick.t
+t/basic.html
+t/find_link.html
+t/formbasics.html
+t/jstest.html
+t/jstestok.html
+t/tick.html
+META.yml                                 Module meta-data (added by MakeMaker)
