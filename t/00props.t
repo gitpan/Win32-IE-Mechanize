@@ -1,14 +1,15 @@
 #! perl -w
 use strict;
 
-# $Id: 00props.t 225 2005-01-03 22:37:27Z abeltje $
+# $Id: 00props.t 233 2005-01-08 11:01:44Z abeltje $
 
 use Test::More;
 
 plan $^O =~ /MSWin32|cygwin/i 
-    ? (tests => 11) : (skip_all => "This is not MSWin32!");
+    ? (tests => 12) : (skip_all => "This is not MSWin32!");
 
 use_ok 'Win32::IE::Mechanize';
+diag "Testing Win32::IE::Mechanize $Win32::IE::Mechanize::VERSION";
 
 isa_ok my $ie = Win32::IE::Mechanize->new( visible => $ENV{WIM_VISIBLE} ),
        "Win32::IE::Mechanize";
@@ -41,6 +42,8 @@ $ie->set_property( $new );
 for my $prop (keys %$new) {
     is $agent->{ $prop }, $new->{ $prop }, "$prop => $new->{ $prop }";
 }
+
+is $ie->set_property, '', "No properties set";
 
 $ie->set_property( visible => $df_vis, %save );
 

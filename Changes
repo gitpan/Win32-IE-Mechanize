@@ -10,6 +10,87 @@ The filelists have a short symbolic indicator:
 
 Enjoy!
 ___________________________________________________________________________
+[   238] By: abeltje                          on 2005-01-09 22:05:34 +0100
+        Log: * Prepare fro Win32::IE::Mechanize-0.008
+        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   237] By: abeltje                          on 2005-01-09 22:03:17 +0100
+        Log: * [CHANGE]
+	       * fix the calls to prove
+	       * add /C(over) option
+        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/mkdist.cmd
+___________________________________________________________________________
+[   236] By: abeltje                          on 2005-01-09 20:29:28 +0100
+        Log: * [CHANGE]
+	       * added tests, to get some more coverage
+        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/t/bluedot.png,
+	     /Win32-IE-Mechanize/t/greendot.jpg,
+	     /Win32-IE-Mechanize/t/reddot.gif
+           ! /Win32-IE-Mechanize/t/01construct.t,
+	     /Win32-IE-Mechanize/t/02ct.t, /Win32-IE-Mechanize/t/basic.t,
+	     /Win32-IE-Mechanize/t/formbasics.html,
+	     /Win32-IE-Mechanize/t/formbasics.t,
+	     /Win32-IE-Mechanize/t/image-parse.t
+___________________________________________________________________________
+[   235] By: abeltje                          on 2005-01-09 20:23:31 +0100
+        Log: * [CHANGE]
+	       * new() consructor
+	       * values() returns *all* values in list context
+	       * some minor stuff
+	       * added known bug to the BUGS POD-section
+        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   234] By: abeltje                          on 2005-01-09 20:09:55 +0100
+        Log: * [CHANGE]
+	       * Finish the POD
+        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Image.pm
+___________________________________________________________________________
+[   233] By: abeltje                          on 2005-01-08 12:01:44 +0100
+        Log: * [CHANGE]
+	       + Add more tests
+        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/t/01construct.t,
+	     /Win32-IE-Mechanize/t/02ct.t, /Win32-IE-Mechanize/t/basic.txt
+           ! /Win32-IE-Mechanize/t/00props.t,
+	     /Win32-IE-Mechanize/t/basic.html,
+	     /Win32-IE-Mechanize/t/formbasics.html,
+	     /Win32-IE-Mechanize/t/formbasics.t
+___________________________________________________________________________
+[   232] By: abeltje                          on 2005-01-08 11:45:31 +0100
+        Log: * [CHANGE]
+	       * Add ->ct eq 'text/plain'
+        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   230] By: abeltje                          on 2005-01-04 15:56:08 +0100
+        Log: * [CHANGE]
+	       * some little POD changes to Win32::IE::Mechanize
+	       * some little POD changes to Win32::IE::Image
+	       * factor out Win32::IE::Form
+	       * factor out Win32::IE::Input
+        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/lib/Win32/IE/Form.pm,
+	     /Win32-IE-Mechanize/lib/Win32/IE/Input.pm
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Image.pm,
+	     /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   229] By: abeltje                          on 2005-01-04 15:53:20 +0100
+        Log: * [CHANGE]
+	       * add a diag() message with the Win32::IE::Mechanize
+		 version
+        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/t/00props.t
+___________________________________________________________________________
+[   225] By: abeltje                          on 2005-01-03 23:44:23 +0100
+        Log: * Prepare for the 0.007_4 snapshot
+        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/Changes
+___________________________________________________________________________
 [   224] By: abeltje                          on 2005-01-03 23:37:27 +0100
         Log: * [CHANGE]
 	       * Change the TODO test to skip with some conditions, seems

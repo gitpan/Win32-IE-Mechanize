@@ -3,7 +3,7 @@
 	PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 	 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-US">
-  <!-- $Id: formbasics.html 72 2003-11-30 21:08:41Z abeltje $ -->
+  <!-- $Id: formbasics.html 233 2005-01-09 19:29:28Z abeltje $ -->
   <head>
     <title>Test-forms Page</title>
 
@@ -14,9 +14,11 @@
       <input type="hidden" name="dummy" value="empty" />
     </form>
     <p>-- Mark --</p>
-    <form name="form2">
+    <form name="form2" action="formbasics.html">
       <input type="hidden" name="dummy2" value="empty" />
-      <input type="text"   name="query"  value=""      />
+      Query: <input type="text"   name="query"  value=""      /><br />
+      Flags: <input type="checkbox" name="flags" value="1" />1
+      <input type="checkbox" name="flags" value="2" />2
       <input type="submit" value="Submit" />
     </form>
   </body>

@@ -1,0 +1,6 @@
+This is a basic textfile. It hasn't got any usefill content, but we
+need a plain text file for testing...
+
+
+bye from Win32::IE::Mechanize
+$Id: basic.txt 233 2005-01-08 11:01:44Z abeltje $

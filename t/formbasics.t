@@ -5,12 +5,12 @@ use Cwd;        # These help the cygwin tests
 require Win32;
 my $base = Win32::GetCwd();
 
-# $Id: formbasics.t 216 2004-12-29 18:32:42Z abeltje $
+# $Id: formbasics.t 233 2005-01-09 19:29:28Z abeltje $
 
 use Test::More;
 
 plan $^O =~ /MSWin32|cygwin/i
-    ? (tests => 19) : (skip_all => "This is not MSWin32!");
+    ? (tests => 33) : (skip_all => "This is not MSWin32!");
 
 use_ok 'Win32::IE::Mechanize';
 
@@ -50,6 +50,31 @@ is scalar @forms, 2, "Form count";
         ok defined $form_nb->find_input( $field ), "Fields exist";
     }
 
+    my $furi = 'formbasics.html';
+    is $form_nb->action, $furi, "action( $furi )";
+    is lc $form_nb->method, 'get', "method=GET";
+    is $form_nb->enctype, 'application/x-www-form-urlencoded', "enctype()";
+    my $fname = $form_nb->attr( 'name' );
+    is $fname, 'form2', "attr( 'name' ) eq $fname";
+    is $form_nb->attr( 'unknown' ), undef, "unkown attribute";
+    is $form_nb->find_input( 'unknown' ), undef, "unknown input controle";
+    my $submit = $form_nb->find_input( undef, 'submit' );
+    is $submit->value, 'Submit', "Submit-button";
+
+    my @flags = $form_nb->find_input( 'flags' );
+    is scalar @flags, 2, "number of checkboxes";
+
+    my $flag2 = $form_nb->find_input( 'flags', undef, 2);
+    is $flag2->value, 2, "second value";
+    my( $flag1 ) = $form_nb->find_input( 'flags', undef, 1);
+    is $flag1->value, 1, "first value";
+    {
+        isa_ok $ie->form_number( 2 ), 'Win32::IE::Form';
+        ok $ie->tick( flags => 1 ), "tick( 1 )";
+        ok $ie->tick( flags => 2 ), "tick( 2 )";
+        my @vals = $ie->value( 'flags' );
+        is_deeply \@vals, [1, 2], "values( flags )";
+    }
     ok !$ie->form_name( 'doesnotexist' ),
        "Cannot select unknown form";
 }
@@ -64,7 +89,7 @@ is scalar @forms, 2, "Form count";
 
 my $prev_uri = $ie->uri;
 ok $ie->form_name( 'form2' ), "Selected the form";
-
+$ie->untick( flags => $_ ) for ( 1..2 );
 $ie->submit_form(
     form_name => 'form2',
     fields    => {

@@ -1,9 +1,9 @@
 package Win32::IE::Mechanize;
 use strict;
 
-# $Id: Mechanize.pm 225 2005-01-03 22:30:25Z abeltje $
+# $Id: Mechanize.pm 239 2005-01-09 21:05:34Z abeltje $
 use vars qw( $VERSION );
-$VERSION = '0.007_4';
+$VERSION = '0.008';
 
 =head1 NAME
 
@@ -66,7 +66,7 @@ code and nicked most of your documentation!>
 For more information on the OLE2 interface for InternetExplorer, google
 for B<InternetExplorer.Application+msdn>.
 
-=head1 Construction and properties
+=head1 CONSTRUCTION AND PROPERTIES
 
 =cut
 
@@ -98,28 +98,25 @@ See C<L<set_property()>> for supported options.
 =cut
 
 sub new {
-    my $proto = shift;
-    my $class = ref $proto ? ref $proto : $proto;
+    my $class = shift;
 
-    my $self = {
-        agent => Win32::OLE->new( 'InternetExplorer.Application' ),
-    };
+    my $self = bless {
+        _opt    => {},
+        quiet   => 0,
+        onwarn  => \&Win32::IE::Mechanize::__warn,
+        onerror => \&Win32::IE::Mechanize::__die,
+    }, $class;
+
     my %opt = @_ ? UNIVERSAL::isa( $_[0], 'HASH' ) ? %{ $_[0] } : @_ : ();
     $self->{_opt} = { map {
         ( $_ => __prop_value( $_, $opt{ $_ } ) )
     } grep exists $ie_property{ lc $_ } => keys %opt };
-    foreach my $prop ( keys %{ $self->{_opt} } ) {
-        defined $self->{_opt}{ $prop } and
-            $self->{agent}->{ $prop } = $self->{_opt}{ $prop };
-    }
 
     # some more options not for IE
     $self->{ $_ } = exists $opt{ $_ } ? $opt{ $_ } : undef
         for qw( quiet onwarn onerror );
-    $self->{onwarn}  ||= \&Win32::IE::Mechanize::__warn;
-    $self->{onerror} ||= \&Win32::IE::Mechanize::__die;
 
-    bless $self, $class;
+    $self->open;
 }
 
 =head2 $ie->set_property( %opt )
@@ -197,12 +194,20 @@ sub close { $_[0]->{agent}->quit; $_[0]->{agent} = undef; }
 sub open {
     my $self = shift;
     defined $self->{agent} and return;
-    $self->{agent} = Win32::OLE->new( 'InternetExplorer.Application' );
+    $self->{agent} = Win32::OLE->new( 'InternetExplorer.Application' ) or
+        $self->die( "Cannot create an InternetExplorer.Application" );
     foreach my $prop ( keys %{ $self->{_opt} } ) {
         defined $self->{_opt}{ $prop } and
             $self->{agent}->{ $prop } = $self->{_opt}{ $prop };
     }
+    return $self;
 }
+
+=head2 $ie->agent
+
+Return a reference to the InternetExplorer automation object.
+
+=cut
 
 sub agent { $_[0]->{agent} }
 
@@ -282,7 +287,8 @@ sub ct {
     CASE: {
         local $_ = $ct;
         /^HTML (?:Document|File)/i and return "text/html";
-        /^(\w+) Image/i   and return "text/\L$1";
+        /^Text (?:Document|File)/i and return "text/plain";
+        /^(\w+) Image/i   and return "image/\L$1";
 
         return $_;
     }
@@ -298,23 +304,6 @@ sub current_form {
     my $self = shift;
     defined $self->{cur_form} or $self->form_number( 1 );
     $self->{cur_form};
-}
-
-=head2 $ie->links
-
-When called in a list context, returns a list of the links found in
-the last fetched page. In a scalar context it returns a reference to
-an array with those links. The links returned are all
-C<Win32::IE::Link> objects.
-
-=cut
-
-sub links {
-    my $self = shift;
-
-    defined $self->{links} or $self->{links} = $self->_extract_links;
-
-    return wantarray ? @{ $self->{links} } : $self->{links};
 }
 
 =head2 $ie->is_html
@@ -351,6 +340,23 @@ and beware all tags are upcased :(
 sub content { $_[0]->{agent}->Document->documentElement->{outerHTML} }
 
 =head1 LINK METHODS
+
+=head2 $ie->links
+
+When called in a list context, returns a list of the links found in
+the last fetched page. In a scalar context it returns a reference to
+an array with those links. The links returned are all
+C<Win32::IE::Link> objects.
+
+=cut
+
+sub links {
+    my $self = shift;
+
+    defined $self->{links} or $self->{links} = $self->_extract_links;
+
+    return wantarray ? @{ $self->{links} } : $self->{links};
+}
 
 =head2 $ie->follow_link( %opt )
 
@@ -782,7 +788,7 @@ sub form_number {
 
     my $number = shift || 1;
     $self->_extract_forms unless defined $self->{forms};
-    if ( $self->{forms} && $number <= @{ $self->{forms} } ) {
+    if ( @{ $self->{forms} } && $number <= @{ $self->{forms} } ) {
         $self->{cur_form} = $self->{forms}[ $number - 1 ];
     } else {
         $self->warn( "There is no form numbered $number." );
@@ -909,7 +915,7 @@ sub set_fields {
             if ( $input ) {
                 $input->value( $value );
             } else {
-                $self->warn( "No inputcontrol by the name '$fname'" );
+                sssself->warn( "No inputcontrol by the name '$fname'" );
             }
         }
     }
@@ -998,13 +1004,14 @@ sub tick {
     my @check_boxes = grep $_->value eq $value
         => $form->find_input( $name, 'checkbox' );
 
-    $self->warn( "No checkbox '$name'  for value '$value' in form." )
+    $self->warn( "No checkbox '$name'  for value '$value' in form." ), return
         unless @check_boxes;
 
     foreach my $check_box ( @check_boxes ) {
         next unless $check_box->value eq $value;
         ${$check_box}->{checked} = $set;
     }
+    return 1;
 }
 
 =head2 $ie->untick( $name, $value )
@@ -1040,14 +1047,16 @@ sub value {
     my $number = shift || 1;
 
     my $form = $self->current_form;
+    if ( wantarray ) {
+        my @inputs = $form->find_input( $name );
+        return @inputs ? map $_->value() => @inputs : undef;
+    }
     if ( $number > 1 ) {
         return $form->find_input( $name, undef, $number )->value();
     } else {
         return $form->value( $name );
     }
 }
-
-=head1 Form submission methods
 
 =head2 $ie->click( $button )
 
@@ -1232,6 +1241,54 @@ sub submit_form {
 
 =head1 MISCELANEOUS METHODS
 
+=head2 $ie->add_header( name => $value [, name => $value... ] )
+
+Sets HTTP headers for the agent to add or remove from the HTTP request.
+
+    $ie->add_header( Encoding => 'text/klingon' );
+
+If a I<value> is C<undef>, then that header will be removed from any
+future requests.  For example, to never send a Referer header:
+
+    $ie->add_header( Referer => undef );
+
+Returns the number of name/value pairs added.
+
+=cut
+
+sub add_header {
+    my $self = shift;
+    my $npairs = 0;
+
+    while ( @_ ) {
+        my $key = shift;
+        my $value = shift;
+        ++$npairs;
+
+        $self->{headers}{$key} = $value;
+    }
+
+    return $npairs;
+}
+
+=head2 $ie->delete_header( name [, name ... ] )
+
+Removes HTTP headers from the agent's list of special headers.
+
+B<NOTE>: This might not work like it does with C<WWW::Mechanize>
+
+=cut
+
+sub delete_header {
+    my $self = shift;
+
+    while ( @_ ) {
+        my $key = shift;
+
+        delete $self->{headers}{$key};
+    }
+}
+
 =head2 $ie->quiet( [$state] )
 
 Allows you to suppress warnings to the screen.
@@ -1283,7 +1340,7 @@ sub load_frame {
     $self->get( $self->find_frame( $frame ) );
 }
 
-=head1 LWP compatability methods
+=head1 LWP COMPATABILITY METHODS
 
 =head2 $ie->credentials( $netloc, $realm, $uid, $pass )
 
@@ -1349,41 +1406,7 @@ sub set_realm {
     $self->{basic_authentication}{ $netloc }{__active_realm__} = $realm;
 }
 
-=head2 $ie->add_header( name => $value [, name => $value... ] )
-
-Sets HTTP headers for the agent to add or remove from the HTTP request.
-
-    $mech->add_header( Encoding => 'text/klingon' );
-
-If a I<value> is C<undef>, then that header will be removed from any
-future requests.  For example, to never send a Referer header:
-
-    $mech->add_header( Referer => undef );
-
-If you want to delete a header, use C<delete_header>.
-
-Returns the number of name/value pairs added.
-
-This method was ported from LWWW::Mechanize)
-
-=cut
-
-sub add_header {
-    my $self = shift;
-    my $npairs = 0;
-
-    while ( @_ ) {
-        my $key = shift;
-        my $value = shift;
-        ++$npairs;
-
-        $self->{headers}{$key} = $value;
-    }
-
-    return $npairs;
-}
-
-=head1 Internal-only methods
+=head1 INTERNAL-ONLY METHODS
 
 =head2 DESTROY
 
@@ -1421,7 +1444,7 @@ sub _extract_forms {
 
 The links come from the following:
 
-=over 0
+=over 2
 
 =item "<A HREF=...>"
 
@@ -1584,7 +1607,7 @@ sub _extra_headers {
     return $header;
 }
 
-=head1 Internal only non-methods
+=head1 INTERNAL ONLY NON-METHODS
 
 =head2 __prop_value( $key[, $value] )
 
@@ -1650,7 +1673,10 @@ Retuns a new Win32::IE::Image. NOT a method!
 
 =cut
 
+use Win32::IE::Form;
 sub __new_form  { return Win32::IE::Form->new( @_ )  }
+
+use Win32::IE::Input;
 sub __new_input { return Win32::IE::Input->new( @_ ) }
 
 use Win32::IE::Link;
@@ -1661,386 +1687,52 @@ sub __new_image { return Win32::IE::Image->new( @_ ) }
 
 1;
 
-package Win32::IE::Form;
-
-=head1 PACKAGE Win32::IE::Form
-
-Win32::IE::Form - Like <HTML::Form> but for the IE form object.
-
-=head1 METHODS
-
-=head2 Win32::IE::Form->new( $form_obj );
-
-Initialize a new object, it is only a ref to a scalar, the rest is
-done through the methods.
-
-=cut
-
-sub new {
-    my $class = shift;
-    
-    bless \(my $self = shift), $class;
-}
-
-=head2 $form->method( [$new_method] )
-
-Get/Set the I<method> used to submit the from (i.e. B<GET> or
-B<POST>).
-
-=cut
-
-sub method {
-    my $self = shift;
-    my $form = $$self;
-    
-    $form->{method} = shift if  @_;
-    return $form->{method};
-}
-
-=head2 $form->action( [$new_action] )
-
-Get/Set the I<action> for submitting the form.
-
-=cut
-
-sub action {
-    my $self = shift;
-    my $form = $$self;
-    
-    $form->{action} = shift if @_;
-    return $form->{action};
-}
-
-=head2 $form->enctype( [$new_enctype] )
-
-Get/Set the I<enctype> of the form.
-
-=cut
-
-sub enctype {
-    my $self = shift;
-    my $form = $$self;
-
-    $form->{enctype} = shift if @_;
-    return $form->{enctype};
-}
-
-=head2 $form->attr( $name[, $new_value] )
-
-Get/Set any of the attributes from the FORM-tag.
-
-=cut
-
-sub attr {
-    my $self = shift;
-    my $form = $$self;
-
-    return unless @_;
-    my $name = shift;
-    my $index = undef;
-    for (my $i = 0; $i < $form->attributes->length; $i++ ) {
-        next unless $form->attributes( $i )->name eq $name;
-        $index = $i;
-        last;
-    }
-    if ( defined $index ) {
-        $form->attributes( $index )->{value} = shift if @_;
-        return $form->attributes( $index )->{value};
-    } else {
-        return;
-    }
-}
-
-=head2 $form->name()
-
-Return the name of this form.
-
-=cut
-
-sub name {
-    my $self = shift;
-    my $form = $$self;
-
-    return $form->{name}
-}
-
-=head2 $form->inputs()
-
-Returns a list of L<Win32::IE::Input> objects. In scalar context it
-will return the number of inputs.
-
-=cut
-
-sub inputs {
-    my $self = shift;
-    my $form = $$self;
-
-    my $ok_tags = join "|", qw( BUTTON INPUT SELECT TEXTAREA );
-    my( @inputs, %radio_seen ) ;
-    for ( my $i = 0; $i < $form->all->length; $i++ ) {
-        next unless $form->all( $i )->tagName =~ /$ok_tags/i;
-        if ( lc( $form->all( $i )->tagName ) eq 'input' &&
-             lc( $form->all( $i )->type    ) eq 'radio' ) {
-
-            $radio_seen{ $form->all( $i )->name }++ or
-                push @inputs, Win32::IE::Input->new( $form->all( $i ) );
-
-        } else {
-            push @inputs, Win32::IE::Input->new( $form->all( $i ) );
-        }
-    }
-
-    return wantarray ? @inputs : scalar @inputs;
-}
-
-=head2 $form->find_input( $name[, $type[, $index]] )
-
-This method is used to locate specific inputs within the form.  All
-inputs that match the arguments given are returned.  In scalar context
-only the first is returned, or C<undef> if none match.
-
-If $name is specified, then the input must have the indicated name.
-
-If $type is specified, then the input must have the specified type.
-The following type names are used: "text", "password", "hidden",
-"textarea", "file", "image", "submit", "radio", "checkbox" and "option".
-
-The $index is the sequence number of the input matched where 1 is the
-first.  If combined with $name and/or $type then it select the I<n>th
-input with the given name and/or type.
-
-(This method is ported from L<HTML::Form>)
-
-=cut
-
-sub find_input {
-    my $self = shift;
-    my $form = $$self;
-
-    my( $name, $type, $index ) = @_;
-    my $typere = qr/.*/;
-    $type and $typere = $type =~ /^select/i ? qr/^$type/i : qr/^$type$/i; 
-
-    if ( wantarray ) {
-        my( $cnt, @res ) = ( 0 );
-        for my $input ( $self->inputs ) {
-            if ( defined $name ) {
-                $input->name or next;
-                $input->name ne $name and next;
-            }
-            $input->type =~ $typere or next;
-            $cnt++;
-            $index && $index ne $cnt and next;
-            push @res, $input;
-        }
-        return @res;
-    } else {
-        $index ||= 1;
-        for my $input ( $self->inputs ) {
-            if ( defined $name ) {
-                $input->name or next;
-                $input->name ne $name and next;
-            }
-            $input->type =~ $typere or next;
-            --$index and next;
-            return $input;
-        }
-        return undef;
-    }
-}
-
-=head2 $form->value( $name[, $new_value] )
-
-Get/Set the value for the input-contol with specified name.
-
-=cut
-
-sub value {
-    my $self = shift;
-    my $form = $$self;
-
-    my $input = $self->find_input( shift );
-    return $input->value( @_ );
-}
-
-=head2 $form->submit()
-
-Submit this form.
-
-=cut
-
-sub submit {
-    my $self = shift;
-    my $form = $$self;
-
-    $form->submit;
-}
-
-=head2 $self->_radio_group( $name )
-
-Returns a list of Win32::OLE objects with C<< <input type="radio"
-name="$name"> >>.
-
-=cut
-
-sub _radio_group {
-    my $self = shift;
-    my $form = $$self;
-
-    my $name = shift or return;
-    my @rgroup;
-    for ( my $i = 0; $i < $form->all->length; $i++ ) {
-        next unless $form->all( $i )->tagName =~ /input/i;
-        next unless $form->all( $i )->type =~ /radio/i;
-        next unless $form->all( $i )->name eq $name;
-        push @rgroup, $form->all( $i );
-    }
-
-    return wantarray ? @rgroup : \@rgroup;
-}
-
-package Win32::IE::Input;
-
-=head1 PACKAGE Win32::IE::Input
-
-Win32::IE::Input - A small class to interface with the IE input objects.
-
-=head1 METHODS
-
-=head2 Win32::IE::Input->new( $ie_input )
-
-Initialize a new object (like L<Win32::IE::Form>).
-
-=cut
-
-sub new {
-    my $class = shift;
-
-    bless \(my $self = shift), $class;
-}
-
-=head2 $input->name
-
-Return the input-control name.
-
-=cut
-
-sub name { return ${ $_[0] }->name; }
-
-=head2 $input->type
-
-Return the type of the input control.
-
-=cut
-
-sub type { return lc ${ $_[0] }->type; }
-
-=head2 $input->value( [$value] )
-
-Get/Set the value of the input control.
-
-=cut
-
-sub value {
-    my $self = shift;
-    my $input = $$self;
-
-    $self->type =~ /^select/i and return $self->select_value( @_ );
-    $self->type =~ /^radio/i  and return $self->radio_value( @_ );
-
-    $input->{value} = shift if @_ && defined $_[0];
-    return $input->{value};
-}
-
-=head2 $input->select_value( [$value] )
-
-Mark all options from the options collection with C<$value> as
-selected and unselect all other options.
-
-=cut
-
-sub select_value {
-    my $self = shift;
-    my $input = $$self;
-
-    my %vals;
-    if ( @_ ) {
-        my @values = @_;
-        if ( @values == 1 && ref $values[0] eq 'HASH' ) {
-            my @ords = ref $values[0]->{n}
-                ? @{ $values[0]->{n} } : $values[0]->{n};
-            @values = ();
-            foreach my $i ( @ords ) {
-                $i > 0 && $i <= $input->options->{length} and
-                    push @values, $input->options( $i - 1 )->{value};
-            }
-        }
-        @values = @{ $values[0] } if @values == 1 && ref $values[0];
-
-        # Make sure only the last value is set for:
-        # select-one type with multiple values;
-        @values = ( $values[-1] ) if lc( $input->type ) eq 'select-one';
- 
-        %vals = map { ( $_ => undef ) } @values;
-
-        for ( my $i = 0; $i < $input->options->{length}; $i++ ) {
-            $input->options( $i )->{selected} = 
-                exists $vals{ $input->options( $i )->{value} };
-        }
-    } else {
-        for ( my $i = 0; $i < $input->options->{length}; $i++ ) {
-            $input->options( $i )->{selected} and
-                $vals{ $input->options( $i )->{value} } = 1;
-        }
-    }
-    return keys %vals;
-}
-
-=head2 $input->radio_value( [$value] )
-
-Locate all radio-buttons with the same name within this form. Now
-uncheck all values that are not equal to C<$value>.
-
-=cut
-
-sub radio_value {
-    my $self = shift;
-    my $input = $$self;
-
-    my $form = Win32::IE::Form->new( $input->form );
-    my @radios = $form->_radio_group( $self->name );
-
-    if ( @_ ) {
-        my $value = shift;
-        $_->{checked} = $_->value eq $value for @radios;
-    }
-    my( $value ) = map $_->{value} => grep $_->checked => @radios;
-    return $value;
-}
-
-=head2 $input->click
-
-Calls the C<click()> method on the actual object. This may not work.
-
-=cut
-
-sub click { ${ $_[0] }->click }
-
 =head1 CAVEATS
 
 The InternetExplorer automation object does not provide an interface
 to the options menus. This means that you will need to set all options
-needed for this automation before you start.
+needed for this automation before you start. This means that you may
+need to set your security settings to a low and possibly unsafe level.
 
 The InternetExplorer automation object does not provide an interface
-to "popup windows" generated by options or JScript contained in the
-page.
+to "popup windows" generated by security settings or JScript contained
+in the page.
+
+The InternetExplorer automation object does not provide an interface
+to the content of frames from the toplevel document. This means that
+you need to load the frame explicitly (using the follow_link()
+method).
+
+The basic authentication support is quite wonky and will only work
+with the C<get()> method.
 
 =head1 BUGS
 
 Yes, there are bugs. The test-suite doesn't fully cover the codebase.
 
-Please report bugs to L<http://rt.cpan.org>
+=over 4
+
+=item frames
+
+Some reports have come in regarding frames. So far nobody has been
+able to provide me with a testcase, so I can't realy "fix" those.
+
+=item forks
+
+Gabor Szabo reported problems with forking and C<use
+Win32::IE::Mechanize>. His workaround is to change the "global" C<use
+Win32::IE::Mechanize> with localized C<require Win32::IE::Mechanize>
+in the child's code.
+
+=item encodings
+
+Gabor Szabo reported problems with pages that use non-standard
+encoding. In his case it turns out that somewhere along the line, the
+right-to-left hebrew contents are lost.
+
+=back
+
+Please report bugs using L<http://rt.cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 

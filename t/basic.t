@@ -5,12 +5,12 @@ use Cwd;        # These help the cygwin tests
 require Win32;
 my $base = Win32::GetCwd();
 
-# $Id: basic.t 220 2004-12-29 22:27:04Z abeltje $
+# $Id: basic.t 233 2005-01-09 19:29:28Z abeltje $
 
 use Test::More;
 
 plan $^O =~ /MSWin32|cygwin/i 
-    ? (tests => 11) : (skip_all => "This is not MSWin32!");
+    ? (tests => 12) : (skip_all => "This is not MSWin32!");
 
 use_ok 'Win32::IE::Mechanize';
 
@@ -36,5 +36,8 @@ is $ie->uri, $f_uri, "new uri $f_uri";
 ok $ie->back, "back()";
 (my $o_uri = $uri ) =~ s|://([a-z]):|:///\U$1:|i;
 is $ie->uri, $o_uri, "back at $o_uri";
+
+my $link = $ie->find_link( text => 'formbasics' );
+is $link->name, '', "<A> has no name";
 
 $ENV{WIM_VISIBLE} or $ie->close;
