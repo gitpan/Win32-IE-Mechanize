@@ -1,7 +1,7 @@
 #! perl -w
 use strict;
 
-# $Id: 00props.t 220 2004-12-29 22:27:04Z abeltje $
+# $Id: 00props.t 225 2005-01-03 22:37:27Z abeltje $
 
 use Test::More;
 
@@ -20,8 +20,9 @@ my $agent = $ie->agent;
 my $df_vis = $ENV{WIM_VISIBLE} || 0;
 is $agent->{visible}, $df_vis, "Visible-attrib";
 
-TODO: {
-    local $TODO = "Can go wrong from terminal only";
+SKIP: {
+    skip "Graphical system not available?", 1
+        unless $ENV{LOGONSERVER} && !$ENV{SSH_TTY};
     $ie->set_property( visible => 1 );
     is $agent->{visible}, 1, "Visible!";
 }

@@ -1,9 +1,9 @@
 package Win32::IE::Mechanize;
 use strict;
 
-# $Id: Mechanize.pm 221 2004-12-29 23:39:05Z abeltje $
+# $Id: Mechanize.pm 225 2005-01-03 22:30:25Z abeltje $
 use vars qw( $VERSION );
-$VERSION = '0.007_3';
+$VERSION = '0.007_4';
 
 =head1 NAME
 
@@ -582,15 +582,20 @@ sub find_all_links {
     $self->find_link( @_, n => 'all' );
 }
 
-
 =head1 IMAGE METHODS
 
 =head2 $ie->images
 
 Lists all the images on the current page.  Each image is a
-WWW::Mechanize::Image object. In list context, returns a list of all
+Win32::IE::Image object. In list context, returns a list of all
 images.  In scalar context, returns an array reference of all images.
 
+B<NOTE>: Althoug L<WWW::Mechanize> explicitly only supports 
+    <INPUT type=submit src="...">
+constructs, this is B<not> supported by IE, it must be:
+    <INPUT type=image src="...">
+for IE to behave as expected.
+ 
 =cut
 
 sub images {
@@ -604,7 +609,7 @@ sub images {
 =head2 $ie->find_image()
 
 Finds an image in the current page. It returns a
-L<WWW::Mechanize::Image> object which describes the image.  If it fails
+L<Win32::IE::Image> object which describes the image.  If it fails
 to find an image it returns undef.
 
 You can select which link to find by passing in one or more of these
@@ -618,13 +623,13 @@ C<alt> matches the ALT attribute of the image against I<string>, which must be a
 n
 exact match. To select a image with an ALT tag that is exactly "download", use
 
-    $mech->find_image( alt  => "download" );
+    $ie->find_image( alt  => "download" );
 
 C<alt_regex> matches the ALT attribute of the image  against a regular
 expression.  To select an image with an ALT attribute that has "download"
 anywhere in it, regardless of case, use
 
-    $mech->find_image( alt_regex => qr/download/i );
+    $ie->find_image( alt_regex => qr/download/i );
 
 =item * C<< url => 'string', >> and C<< url_regex => qr/regex/, >>
 
@@ -644,7 +649,7 @@ Matches the tag that the image came from against I<string> or I<regex>,
 as appropriate.  The C<tag_regex> is probably most useful to check for
 more than one tag, as in:
 
-    $mech->find_image( tag_regex => qr/^(img|input)$/ );
+    $ie->find_image( tag_regex => qr/^(img|input)$/ );
 
 The tags supported are C<< <img> >> and C<< <input> >>.
 
@@ -658,10 +663,10 @@ Note that you can specify multiple ALT or URL parameters, which
 will be ANDed together.  For example, to find the first image with
 ALT text of "News" and with "cnn.com" in the URL, use:
 
-    $mech->find_image( image => "News", url_regex => qr/cnn\.com/ );
+    $ie->find_image( image => "News", url_regex => qr/cnn\.com/ );
 
 The return value is a reference to an array containing a
-L<WWW::Mechanize::Image> object for every image in C<< $self->content >>.
+L<Win32::IE::Image> object for every image in C<< $self->content >>.
 
 =cut
 
@@ -730,7 +735,7 @@ sub _match_any_image_parms {
 
 Returns all the images on the current page that match the criteria.  The
 method for specifying image criteria is the same as in C<L<find_image()>>.
-Each of the images returned is a L<WWW::Mechanize::Image> object.
+Each of the images returned is a L<Win32::IE::Image> object.
 
 In list context, C<find_all_images()> returns a list of the images.
 Otherwise, it returns a reference to the list of images.
@@ -897,14 +902,14 @@ sub set_fields {
             if ( $input ) {
                 $input->value( $value->[0] );
             } else {
-                warn( "No inputcontrol by the name '$fname'" );
+                $self->warn( "No inputcontrol by the name '$fname'" );
             }
         } else {
             my( $input ) = $form->find_input( $fname );
             if ( $input ) {
                 $input->value( $value );
             } else {
-                warn( "No inputcontrol by the name '$fname'" );
+                $self->warn( "No inputcontrol by the name '$fname'" );
             }
         }
     }
@@ -1459,8 +1464,14 @@ sub _extract_images {
     my $doc = $self->{agent}->Document;
 
     my @images;
-    for ( my $i = 0; $i < $doc->images->length; $i++ ) {
-        push @images, __new_image( $doc->images( $i ) );
+    for ( my $i = 0; $i < $doc->all->length; $i++ ) {
+        my $obj = $doc->all( $i );
+        if ( $obj->tagName eq 'IMG' ) {
+            push @images, __new_image( $doc->all( $i ) );
+	} elsif ( $obj->tagName eq 'INPUT' &&
+                  grep /src/i && $obj->{src} => keys %$obj ) {
+            push @images, __new_image( $doc->all( $i ) );
+	}
     }
     $self->{images} = \@images;
 
@@ -1641,7 +1652,11 @@ Retuns a new Win32::IE::Image. NOT a method!
 
 sub __new_form  { return Win32::IE::Form->new( @_ )  }
 sub __new_input { return Win32::IE::Input->new( @_ ) }
+
+use Win32::IE::Link;
 sub __new_link  { return Win32::IE::Link->new( @_ )  }
+
+use Win32::IE::Image;
 sub __new_image { return Win32::IE::Image->new( @_ ) }
 
 1;
@@ -2011,140 +2026,15 @@ Calls the C<click()> method on the actual object. This may not work.
 
 sub click { ${ $_[0] }->click }
 
-package Win32::IE::Link;
+=head1 CAVEATS
 
-=head1 PACKAGE Win32::IE::Link
+The InternetExplorer automation object does not provide an interface
+to the options menus. This means that you will need to set all options
+needed for this automation before you start.
 
-Win32::IE::Link - A bit like WWW::Mechanize::Link
-
-=cut
-
-=head1 METHODS
-
-=head2 Win32::IE::Link->new( $element )
-
-C<$element> is Win32::OLE object with a C<tagName()> of B<IFRAME>,
-B<FRAME>, <AREA> or <A>.
-
-B<Note>: Although it supports the same methods as
-C<L<WWW::Mechanize::Link>> it is a completely different
-implementation.
-
-=cut
-
-sub new {
-    my $class = shift;
-
-    bless \( my $self = shift ), $class;
-}
-
-=head2 $link->url
-
-Returns the url from the link.
-
-=cut
-
-sub url {
-    my $self = ${ $_[0] };
-
-    if ( $self->{tagName} =~ /^IFRAME|FRAME$/ ) {
-        return $self->{src};
-    } else {
-        return $self->{href};
-    }
-}
-
-=head2 $link->text
-
-Text of the link.
-
-=cut
-
-sub text {
-    my $self = ${ $_[0] };
-    return defined $self->{innerHTML} ? $self->innerHTML : '';
-}
-
-=head2 $link->name
-
-NAME attribute from the source tag, if any.
-
-=cut
-
-sub name {
-    my $self = ${ $_[0] };
-    return scalar( grep lc( $_ ) eq 'name' => keys %$self )
-        ? defined $self->{name} ? $self->{name} : '' : '';
-}
-
-=head2 $link->tag
-
-Tag name (either "A", "FRAME" or "IFRAME").
-
-=cut
-
-sub tag {
-    my $self = ${ $_[0] };
-    return $self->{tagName};
-}
-
-package Win32::IE::Image;
-
-=head1 PACKAGE Win32::IE::Image
-
-Win32::IE::Image - A bit like WWW::Mechanize::Image
-
-=head1 METHODS
-
-=head2 Win32::IE::Image->new( $element )
-
-Create a new object, that implements url, base, tag, height, width,
-alt and name
-
-=cut
-
-sub new {
-    my $class = shift;
-
-    bless \( my $self = shift ), $class;
-}
-
-=head2 $image->url
-
-Return the SRC attribute from the IMG tag.
-
-=cut
-
-sub url {
-    my $self = ${ $_[0] };
-    return $self->{SRC};
-}
-
-=head2 $image->tag
-
-Return 'IMG' for images.
-
-=cut
-
-sub tag {
-    my $self = ${ $_[0] };
-    return $self->{TAGNAME};
-}
-
-sub width {
-    my $self = ${ $_[0] };
-    return $self->{WIDTH};
-}
-
-sub height {
-    my $self = ${ $_[0] };
-    return $self->{HEIGHT};
-}
-
-sub alt {
-    my $self = ${ $_[0] };
-    return $self->{ALT};
-}
+The InternetExplorer automation object does not provide an interface
+to "popup windows" generated by options or JScript contained in the
+page.
 
 =head1 BUGS
 
