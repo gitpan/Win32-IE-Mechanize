@@ -1,7 +1,7 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Win32-IE-Mechanize
-version:      0.005
+version:      0.006
 version_from: lib/Win32/IE/Mechanize.pm
 installdirs:  site
 requires:

@@ -1,9 +1,9 @@
 package Win32::IE::Mechanize;
 use strict;
 
-# $Id: Mechanize.pm 142 2004-04-12 10:20:23Z abeltje $
+# $Id: Mechanize.pm 196 2004-04-24 20:47:11Z abeltje $
 use vars qw( $VERSION );
-$VERSION = '0.005';
+$VERSION = '0.006';
 
 =head1 NAME
 
@@ -258,7 +258,13 @@ $self->get() >> it.
 
 sub follow_link {
     my $self = shift;
-    
+    my %parms = ( n => 1, @_ );
+
+    if ( $parms{n} eq "all" ) {
+        delete $parms{n};
+        $self->warn( qq{follow_link( n => "all" ) is not valid} );
+    }
+
     my $link = $self->find_link( @_ );
     $self->get( $link->url ) if $link;
 }
@@ -327,8 +333,10 @@ sub field {
     my $self = shift;
 
     my( $name, $value, $index ) = @_;
-    $self->form_number( 1 ) unless defined $self->{cur_form};
+    defined $self->{cur_form} or $self->form_number( 1 );
+
     my @inputs = $self->{cur_form}->find_input( $name );
+    @inputs or $self->warn( "No '$name' parameter exists" );
     $index ||= 1;
     my $control = $inputs[ $index - 1 ];
     defined $value ? $control->value( $value ) : $control->value();
@@ -369,6 +377,70 @@ sub set_fields {
             $input->value( $value );
         }
     }
+}
+
+=head2 $ie->set_visible( @criteria )
+
+This method sets fields of a form without having to know their
+names.  So if you have a login screen that wants a username and
+password, you do not have to fetch the form and inspect the source
+to see what the field names are; you can just say
+
+    $ie->set_visible( $username, $password ) ;
+
+and the first and second fields will be set accordingly.  The method
+is called set_I<visible> because it acts only on visible fields;
+hidden form inputs are not considered.  The order of the fields is
+the order in which they appear in the HTML source which is nearly
+always the order anyone viewing the page would think they are in,
+but some creative work with tables could change that; caveat user.
+
+Each element in C<@criteria> is either a field value or a field
+specifier.  A field value is a scalar.  A field specifier allows
+you to specify the I<type> of input field you want to set and is
+denoted with an arrayref containing two elements.  So you could
+specify the first radio button with
+
+    $ie->set_visible( [ radio => "KCRW" ] ) ;
+
+Field values and specifiers can be intermixed, hence
+
+    $ie->set_visible( "fred", "secret", [ option => "Checking" ] ) ;
+
+would set the first two fields to "fred" and "secret", and the I<next>
+C<OPTION> menu field to "Checking".
+
+The possible field specifier types are: "text", "password", "hidden",
+"textarea", "file", "image", "submit", "radio", "checkbox" and "select".
+
+This method was ported from L<WWW::Mechanize>.
+
+=cut
+
+sub set_visible {
+    my $self = shift;
+
+    my $form = $self->current_form;
+    my @inputs = $form->inputs;
+
+    while (my $value = shift) {
+        if ( ref $value eq 'ARRAY' ) {
+           my ( $type, $val ) = @$value;
+           while ( my $input = shift @inputs ) {
+               next if $input->type eq 'hidden';
+               if ( $input->type eq $type ) {
+                   $input->value( $val );
+                   last;
+               }
+           } # while
+        } else {
+           while ( my $input = shift @inputs ) {
+               next if $input->type eq 'hidden';
+               $input->value( $value );
+               last;
+           } # while
+       }
+    } # while
 }
 
 =head2 $ie->tick( $name, $value[, $set] )
@@ -432,8 +504,72 @@ sub click {
       $self->{cur_form}->find_input( $button, 'image' ),
       $self->{cur_form}->find_input( $button, 'submit' );
 
-    $toclick and ${$toclick}->click;
+    $toclick and $toclick->click;
     $self->_wait_while_busy;
+}
+
+=head2 $ie->click_button( %args )
+
+Has the effect of clicking a button on a form by specifying its name,
+value, or index.  Its arguments are a list of key/value pairs.  Only
+one of name, number, or value must be specified.
+
+=over 4
+
+=item * name => name
+
+Clicks the button named I<name>.
+
+=item * number => n
+
+Clicks the I<n>th button in the form.
+
+=item * value => value
+
+Clicks the button with the value I<value>.
+
+=back
+
+B<NOTE>: Unlike WWW::Mechanize, Win32::IE::Mechanize takes
+all buttonish types of C<< <INPUT type=> >> into accout: B<button>,
+B<image> and B<submit>.
+
+=cut
+
+sub click_button {
+    my $self = shift;
+    my %args = @_;
+
+    for ( keys %args ) {
+        if ( !/^(number|name|value)$/ ) {
+            $self->warn( qq{Unknown click_button_form parameter "$_"} );
+        }
+    }
+
+    defined $self->{cur_form} or $self->form_number( 1 );
+    my $form = $self->{cur_form};
+    my @buttons = sort { 
+        ${$a}->{sourceIndex} <=> ${$b}->{sourceIndex} 
+    } $form->find_input( $args{name}, 'button' ),
+      $form->find_input( $args{name}, 'image' ),
+      $form->find_input( $args{name}, 'submit' );
+
+    @buttons or return;
+    if ( $args{name} ) {
+        $buttons[0]->click;
+        return $self->_wait_while_busy;
+    } elsif ( $args{number} ) {
+        @buttons <= $args{number} and return
+        $buttons[ $args{number} - 1 ]->click();
+        return $self->_wait_while_busy;
+    } elsif ( $args{value} ) {
+        for my $button ( @buttons ) {
+            if ( $button->value eq $args{value} ) {
+                $button->click();
+                return $self->_wait_while_busy;
+            }
+        }
+    }
 }
 
 =head2 $ie->submit( )
@@ -442,6 +578,10 @@ Submits the page, without specifying a button to click.  Actually,
 no button is clicked at all.
 
 This will call the C<Submit()> method of the currently selected form.
+
+B<NOTE>: It looks like this method does not call the C<onSubmit>
+handler specified in the C<< <FORM> >>-tag, that only seems to work if
+you call the C<click_button()> method with submit button.
 
 =cut
 
@@ -480,6 +620,10 @@ Sets the field values from the I<fields> hashref (calls C<L<set_fields()>>)
 
 Clicks on button I<button> (calls C<L<click()>>)
 
+=item * button => { value => value }
+
+When you specify a hash_ref for button it calls C<click_button()>
+
 =back
 
 If no form is selected, the first form found is used.
@@ -510,7 +654,11 @@ sub submit_form {
     }
 
     if ( $opt{button} ) {
-        $self->click( $opt{button} );
+        if ( ref $opt{button} ) {
+            $self->click_button( %{ $opt{button} } );
+        } else {
+            $self->click( $opt{button} );
+        }
     } else {
         $self->submit();
     }
@@ -588,7 +736,11 @@ Returns the current form as an C<Win32::IE::Form> object.
 
 =cut
 
-sub current_form { $_[0]->{curr_form} }
+sub current_form {
+    my $self = shift;
+    defined $self->{cur_form} or $self->form_number( 1 );
+    $self->{cur_form};
+}
 
 =head2 $ie->links
 
@@ -871,6 +1023,40 @@ sub set_realm {
     $self->{basic_authentication}{ $netloc }{__active_realm__} = $realm;
 }
 
+=head2 $ie->add_header( name => $value [, name => $value... ] )
+
+Sets HTTP headers for the agent to add or remove from the HTTP request.
+
+    $mech->add_header( Encoding => 'text/klingon' );
+
+If a I<value> is C<undef>, then that header will be removed from any
+future requests.  For example, to never send a Referer header:
+
+    $mech->add_header( Referer => undef );
+
+If you want to delete a header, use C<delete_header>.
+
+Returns the number of name/value pairs added.
+
+This method was ported from LWWW::Mechanize)
+
+=cut
+
+sub add_header {
+    my $self = shift;
+    my $npairs = 0;
+
+    while ( @_ ) {
+        my $key = shift;
+        my $value = shift;
+        ++$npairs;
+
+        $self->{headers}{$key} = $value;
+    }
+
+    return $npairs;
+}
+
 =head1 Internal-only methods
 
 =head2 DESTROY
@@ -988,14 +1174,22 @@ For the moment we only support B<basic authentication>.
 sub _extra_headers {
     my( $self, $uri ) = @_;
 
+    my $header = "";
+
+    for my $header ( keys %{ $self->{headers} } ) {
+        next unless defined $self->{headers}{ $header };
+        ( my $hfield = $header ) =~ s/(\w+)/ucfirst lc $1/eg;
+        $header .= "$hfield: $self->{headers}{ $header }\015\012";
+    }
+
     my $host_port = $uri->can( 'host_port' )
         ? $uri->host_port : $uri->as_string;
-    return "" unless exists $self->{basic_authentication}{ $host_port };
+    return $header unless exists $self->{basic_authentication}{ $host_port };
 
     my $realm = $self->{basic_authentication}{ $host_port }{__active_realm__};
     my( $user, $pass ) = $self->get_basic_credentials( $realm, $uri );
 
-    my $header = defined $user ? __authorization_basic( $user, $pass ) : "";
+    $header .= defined $user ? __authorization_basic( $user, $pass ) : "";
 
     return $header;
 }
@@ -1193,10 +1387,19 @@ sub inputs {
     my $self = shift;
     my $form = $$self;
 
-    my @inputs;
+    my $ok_tags = join "|", qw( BUTTON INPUT SELECT TEXTAREA );
+    my( @inputs, %radio_seen ) ;
     for ( my $i = 0; $i < $form->all->length; $i++ ) {
-        next unless $form->all( $i )->tagName =~ /INPUT|SELECT|TEXTAREA/i;
-        push @inputs, Win32::IE::Input->new( $form->all( $i ) );
+        next unless $form->all( $i )->tagName =~ /$ok_tags/i;
+        if ( lc( $form->all( $i )->tagName ) eq 'input' &&
+             lc( $form->all( $i )->type    ) eq 'radio' ) {
+
+            $radio_seen{ $form->all( $i )->name }++ or
+                push @inputs, Win32::IE::Input->new( $form->all( $i ) );
+
+        } else {
+            push @inputs, Win32::IE::Input->new( $form->all( $i ) );
+        }
     }
 
     return wantarray ? @inputs : scalar @inputs;
@@ -1204,7 +1407,21 @@ sub inputs {
 
 =head2 $form->find_input( $name[, $type[, $index]] )
 
-See L<HTML::Form::find_input>
+This method is used to locate specific inputs within the form.  All
+inputs that match the arguments given are returned.  In scalar context
+only the first is returned, or C<undef> if none match.
+
+If $name is specified, then the input must have the indicated name.
+
+If $type is specified, then the input must have the specified type.
+The following type names are used: "text", "password", "hidden",
+"textarea", "file", "image", "submit", "radio", "checkbox" and "option".
+
+The $index is the sequence number of the input matched where 1 is the
+first.  If combined with $name and/or $type then it select the I<n>th
+input with the given name and/or type.
+
+(This method is ported from L<HTML::Form>)
 
 =cut
 
@@ -1214,17 +1431,37 @@ sub find_input {
 
     my( $name, $type, $index ) = @_;
 
-    my @inputs = $self->inputs;
-    return $inputs[ $index - 1 ] if defined $index && $index > 0;
-    @inputs = grep $_->name && $_->name eq $name && 
-                   ( !$type || ( lc( $_->type ) eq lc( $type ) ) ) => @inputs;
-
-    return wantarray ? @inputs : $inputs[0];
+    if ( wantarray ) {
+        my( $cnt, @res ) = ( 0 );
+        for my $input ( $self->inputs ) {
+            if ( defined $name ) {
+                $input->name or next;
+                $input->name ne $name and next;
+            }
+            $type && lc( $input->type ) ne lc( $type ) and next;
+            $cnt++;
+            $index && $index ne $cnt and next;
+            push @res, $input;
+        }
+        return @res;
+    } else {
+        $index ||= 1;
+        for my $input ( $self->inputs ) {
+            if ( defined $name ) {
+                $input->name or next;
+                $input->name ne $name and next;
+            }
+            $type && lc( $input->type ) ne lc( $type ) and next;
+            --$index and next;
+            return $input;
+        }
+        return undef;
+    }
 }
 
 =head2 $form->value( $name[, $new_value] )
 
-Get/Set the value for the input-contol with spcified name.
+Get/Set the value for the input-contol with specified name.
 
 =cut
 
@@ -1247,6 +1484,29 @@ sub submit {
     my $form = $$self;
 
     $form->submit;
+}
+
+=head2 $self->_radio_group( $name )
+
+Returns a list of Win32::OLE objects with C<< <input type="radio"
+name="$name"> >>.
+
+=cut
+
+sub _radio_group {
+    my $self = shift;
+    my $form = $$self;
+
+    my $name = shift or return;
+    my @rgroup;
+    for ( my $i = 0; $i < $form->all->length; $i++ ) {
+        next unless $form->all( $i )->tagName =~ /input/i;
+        next unless $form->all( $i )->type =~ /radio/i;
+        next unless $form->all( $i )->name eq $name;
+        push @rgroup, $form->all( $i );
+    }
+
+    return wantarray ? @rgroup : \@rgroup;
 }
 
 package Win32::IE::Input;
@@ -1283,7 +1543,7 @@ Return the type of the input control.
 
 =cut
 
-sub type { return ${ $_[0] }->type; }
+sub type { return lc ${ $_[0] }->type; }
 
 =head2 $input->value( [$value] )
 
@@ -1295,9 +1555,72 @@ sub value {
     my $self = shift;
     my $input = $$self;
 
+    $self->type =~ /^select/i and return $self->select_value( @_ );
+    $self->type =~ /^radio/i  and return $self->radio_value( @_ );
+
     $input->{value} = shift if @_ && defined $_[0];
     return $input->{value};
 }
+
+=head2 $input->select_value( [$value] )
+
+Mark all options from the options collection with C<$value> as
+selected and unselect all other options.
+
+=cut
+
+sub select_value {
+    my $self = shift;
+    my $input = $$self;
+
+    my %vals;
+    if ( @_ ) {
+        my @values = @_;
+        @values = @{ $values[0] } if @values == 1 && ref $values[0];
+        %vals = map { ( $_ => undef ) } @values;
+
+        for ( my $i = 0; $i < $input->{options}->{length}; $i++ ) {
+            $input->options( $i )->{selected} = 
+                exists $vals{ $input->options( $i )->{value} };
+        }
+    } else {
+        for ( my $i = 0; $i < $input->options->{length}; $i++ ) {
+            $input->options( $i )->{selected} and
+                $vals{ $input->options( $i )->{value} } = 1;
+        }
+    }
+    return keys %vals;
+}
+
+=head2 $input->radio_value( [$value] )
+
+Locate all radio-buttons with the same name within this form. Now
+uncheck all values that are not equal to C<$value>.
+
+=cut
+
+sub radio_value {
+    my $self = shift;
+    my $input = $$self;
+
+    my $form = Win32::IE::Form->new( $input->form );
+    my @radios = $form->_radio_group( $self->name );
+
+    if ( @_ ) {
+        my $value = shift;
+        $_->{checked} = $_->value eq $value for @radios;
+    }
+    my( $value ) = map $_->{value} => grep $_->checked => @radios;
+    return $value;
+}
+
+=head2 $input->click
+
+Calls the C<click()> method on the actual object. This may not work.
+
+=cut
+
+sub click { ${ $_[0] }->click }
 
 package Win32::IE::Link;
 
