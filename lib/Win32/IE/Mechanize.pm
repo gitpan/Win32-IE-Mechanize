@@ -1,9 +1,9 @@
 package Win32::IE::Mechanize;
 use strict;
 
-# $Id: Mechanize.pm 196 2004-04-24 20:47:11Z abeltje $
+# $Id: Mechanize.pm 221 2004-12-29 23:39:05Z abeltje $
 use vars qw( $VERSION );
-$VERSION = '0.006';
+$VERSION = '0.007_3';
 
 =head1 NAME
 
@@ -115,7 +115,9 @@ sub new {
 
     # some more options not for IE
     $self->{ $_ } = exists $opt{ $_ } ? $opt{ $_ } : undef
-        for qw( quiet );
+        for qw( quiet onwarn onerror );
+    $self->{onwarn}  ||= \&Win32::IE::Mechanize::__warn;
+    $self->{onerror} ||= \&Win32::IE::Mechanize::__die;
 
     bless $self, $class;
 }
@@ -175,7 +177,7 @@ sub set_property {
 
     my %raw = @_ ? UNIVERSAL::isa( $_[0], 'HASH' ) ? %{ $_[0] } : @_ : ();
     my %opt = map {
-        ( $_ => _prop_value( $_, $raw{ $_ } ) )
+        ( $_ => __prop_value( $_, $raw{ $_ } ) )
     } grep exists $ie_property{ lc $_ } => keys %raw;
 
     foreach my $prop ( keys %opt ) {
@@ -204,11 +206,12 @@ sub open {
 
 sub agent { $_[0]->{agent} }
 
-=head1 Page-fetching methods
+=head1 PAGE-FETCHING METHODS
 
 =head2 $ie->get( $url )
 
-Navigate to the C<$url> and wait for it to be loaded.
+Use the C<Navigate> method of the IE object to get the C<$url> and
+wait for it to be loaded.
 
 =cut
 
@@ -227,7 +230,8 @@ sub get {
 
 =head2 $ie->reload()
 
-Use the C<Refresh> method of the IE object.
+Use the C<Refresh> method of the IE object and wait for it to be
+loaded.
 
 =cut
 
@@ -238,7 +242,8 @@ sub reload {
 
 =head2 $ie->back()
 
-Use the C<GoBack> method of the IE object.
+Use the C<GoBack> method of the IE object and wait for it to be
+loaded.
 
 =cut
 
@@ -247,7 +252,105 @@ sub back {
     $_[0]->_wait_while_busy;
 }
 
-=head1 Link-following methods
+=head1 STATUS METHODS
+
+=head2 $ie->success
+
+Return true for ReadyState >= 2;
+
+=cut
+
+sub success { $_[0]->{agent}->ReadyState >= 2 }
+
+=head2 $ie->uri
+
+Return the URI of this document (as an URI object).
+
+=cut
+
+sub uri { URI->new( $_[0]->{agent}->LocationURL ) }
+
+=head2 $ie->ct
+
+Fetch the C<mimeType> from the C<< $ie->Document >>. IE does not
+return the MIME type in a way we expect.
+
+=cut
+
+sub ct { 
+    my $ct = $_[0]->{agent}->Document->mimeType;
+    CASE: {
+        local $_ = $ct;
+        /^HTML (?:Document|File)/i and return "text/html";
+        /^(\w+) Image/i   and return "text/\L$1";
+
+        return $_;
+    }
+}
+
+=head2 $ie->current_form
+
+Returns the current form as an C<Win32::IE::Form> object.
+
+=cut
+
+sub current_form {
+    my $self = shift;
+    defined $self->{cur_form} or $self->form_number( 1 );
+    $self->{cur_form};
+}
+
+=head2 $ie->links
+
+When called in a list context, returns a list of the links found in
+the last fetched page. In a scalar context it returns a reference to
+an array with those links. The links returned are all
+C<Win32::IE::Link> objects.
+
+=cut
+
+sub links {
+    my $self = shift;
+
+    defined $self->{links} or $self->{links} = $self->_extract_links;
+
+    return wantarray ? @{ $self->{links} } : $self->{links};
+}
+
+=head2 $ie->is_html
+
+Return true if this is an HTML Document.
+
+=cut
+
+sub is_html {
+    my $self = shift;
+    return $self->ct eq 'text/html';
+}
+
+=head2 $ie->title
+
+Fetch the C<title> from the C<< $ie->Document >>.
+
+=cut
+
+sub title { $_[0]->{agent}->Document->title }
+
+=head1 CONTENT-HANDLING METHODS
+
+=head2 $ie->content
+
+Fetch the C<outerHTML> from the C<< $ie->Document->documentElement >>.
+
+I have found no way to get to the exact contents of the document.
+This is basically the interpretation of IE of what the HTML looks like
+and beware all tags are upcased :(
+
+=cut
+
+sub content { $_[0]->{agent}->Document->documentElement->{outerHTML} }
+
+=head1 LINK METHODS
 
 =head2 $ie->follow_link( %opt )
 
@@ -269,7 +372,396 @@ sub follow_link {
     $self->get( $link->url ) if $link;
 }
 
-=head1 Form field filling methods
+=head2 $ie->find_link( [%options] )
+
+This method finds a link in the currently fetched page. It returns a
+L<Win32::IE::Link> object which describes the link.  (You'll probably
+be most interested in the C<url()> property.)  If it fails to find a
+link it returns undef.
+
+You can take the URL part and pass it to the C<get()> method.  If that's
+your plan, you might as well use the C<follow_link()> method directly,
+since it does the C<get()> for you automatically.
+
+Note that C<< <FRAME SRC="..."> >> tags are parsed out of the the HTML
+and treated as links so this method works with them.
+
+You can select which link to find by passing in one or more of these
+key/value pairs:
+
+=over 4
+
+=item * C<< text => 'string', >> and C<< text_regex => qr/regex/, >>
+
+C<text> matches the text of the link against I<string>, which must be an
+exact match.  To select a link with text that is exactly "download", use
+
+    $mech->find_link( text => "download" );
+
+C<text_regex> matches the text of the link against I<regex>.  To select a
+link with text that has "download" anywhere in it, regardless of case, use
+
+    $mech->find_link( text_regex => qr/download/i );
+
+Note that the text extracted from the page's links are trimmed.  For
+example, C<< <a> foo </a> >> is stored as 'foo', and searching for
+leading or trailing spaces will fail.
+
+=item * C<< url => 'string', >> and C<< url_regex => qr/regex/, >>
+
+Matches the URL of the link against I<string> or I<regex>, as appropriate.
+The URL may be a relative URL, like F<foo/bar.html>, depending on how
+it's coded on the page.
+
+=item * C<< url_abs => string >> and C<< url_abs_regex => regex >>
+
+Matches the absolute URL of the link against I<string> or I<regex>,
+as appropriate.  The URL will be an absolute URL, even if it's relative
+in the page.
+
+=item * C<< name => string >> and C<< name_regex => regex >>
+
+Matches the name of the link against I<string> or I<regex>, as appropriate.
+
+=item * C<< tag => string >> and C<< tag_regex => regex >>
+
+Matches the tag that the link came from against I<string> or I<regex>,
+as appropriate.  The C<tag_regex> is probably most useful to check for
+more than one tag, as in:
+
+    $mech->find_link( tag_regex => qr/^(a|frame)$/ );
+
+The tags and attributes looked at are defined below, at
+L<$mech->find_link() : link format>.
+
+=item * C<< n => number >>
+
+=back
+
+The C<n> parms can be combined with the C<text*> or C<url*> parms
+as a numeric modifier.  For example,
+C<< text => "download", n => 3 >> finds the 3rd link which has the
+exact text "download".
+
+If C<n> is not specified, it defaults to 1.  Therefore, if you don't
+specify any parms, this method defaults to finding the first link on the
+page.
+
+Note that you can specify multiple text or URL parameters, which
+will be ANDed together.  For example, to find the first link with
+text of "News" and with "cnn.com" in the URL, use:
+
+    $ie->find_link( text => "News", url_regex => qr/cnn\.com/ );
+
+=cut
+
+sub find_link {
+    my $self = shift;
+    my %parms = ( n=>1, @_ );
+
+    my $wantall = ( $parms{n} eq "all" );
+
+    $self->_clean_keys( 
+        \%parms,
+        qr/^(n|(text|url|url_abs|name|tag)(_regex)?)$/ 
+    );
+
+    my @links = $self->links or return;
+
+    my $nmatches = 0;
+    my @matches;
+    for my $link ( @links ) {
+        if ( _match_any_link_parms($link,\%parms) ) {
+            if ( $wantall ) {
+                push( @matches, $link );
+            } else {
+                ++$nmatches;
+                return $link if $nmatches >= $parms{n};
+            }
+        }
+    } # for @links
+
+    if ( $wantall ) {
+        return @matches if wantarray;
+        return \@matches;
+    }
+
+    return;
+}
+
+# Stolen from WWW::Mechanize-1.08
+# Used by find_links to check for matches
+# The logic is such that ALL parm criteria that are given must match
+sub _match_any_link_parms {
+    my $link = shift;
+    my $p = shift;
+
+    # No conditions, anything matches
+    return 1 unless keys %$p;
+
+    return if defined $p->{url}
+        and !( $link->url eq $p->{url} );
+    return if defined $p->{url_regex}
+        and !( $link->url =~ $p->{url_regex} );
+    return if defined $p->{url_abs}
+        and !( $link->url_abs eq $p->{url_abs} );
+    return if defined $p->{url_abs_regex}
+        and !( $link->url_abs =~ $p->{url_abs_regex} );
+    return if defined $p->{text}
+        and !( defined($link->text) and $link->text eq $p->{text} );
+    return if defined $p->{text_regex}
+        and !( defined($link->text) and $link->text =~ $p->{text_regex} );
+    return if defined $p->{name}
+        and !( defined($link->name) and $link->name eq $p->{name} );
+    return if defined $p->{name_regex}
+        and !( defined($link->name) and $link->name =~ $p->{name_regex} );
+    return if defined $p->{tag}
+        and !( $link->tag and lc( $link->tag ) eq lc( $p->{tag} ) );
+    return if defined $p->{tag_regex}
+        and !( $link->tag and $link->tag =~ $p->{tag_regex} );
+
+    # Success: everything that was defined passed.
+    return 1;
+}
+
+# Cleans the %parms parameter for the find_link and find_image methods.
+sub _clean_keys {
+    my $self = shift;
+    my $parms = shift;
+    my $rx_keyname = shift;
+
+    for my $key ( keys %$parms ) {
+        my $val = $parms->{$key};
+        if ( $key !~ qr/$rx_keyname/ ) {
+            $self->warn( qq{Unknown link-finding parameter "$key"} );
+            delete $parms->{$key};
+            next;
+        }
+
+        my $key_regex = ( $key =~ /_regex$/ );
+        my $val_regex = ( ref($val) eq "Regexp" );
+
+        if ( $key_regex ) {
+            if ( !$val_regex ) {
+                $self->warn( qq{$val passed as $key is not a regex} );
+                delete $parms->{$key};
+                next;
+            }
+        } else {
+            if ( $val_regex ) {
+                $self->warn( qq{$val passed as '$key' is a regex} );
+                delete $parms->{$key};
+                next;
+            }
+            if ( $val =~ /^\s|\s$/ ) {
+                $self->warn( qq{'$val' is space-padded and cannot succeed} );
+                delete $parms->{$key};
+                next;
+            }
+        }
+    } # for keys %parms
+} # _clean_keys()
+
+=head2 $ie->find_all_links( %opt )
+
+Returns all the links on the current page that match the criteria.
+The method for specifying link criteria is the same as in
+C<find_link()>.  Each of the links returned is in the same format
+as in C<find_link()>.
+
+In list context, C<find_all_links()> returns a list of the links.
+Otherwise, it returns a reference to the list of links.
+
+C<find_all_links()> with no parameters returns all links in the
+page.
+
+=cut
+
+sub find_all_links {
+    my $self = shift;
+    $self->find_link( @_, n => 'all' );
+}
+
+
+=head1 IMAGE METHODS
+
+=head2 $ie->images
+
+Lists all the images on the current page.  Each image is a
+WWW::Mechanize::Image object. In list context, returns a list of all
+images.  In scalar context, returns an array reference of all images.
+
+=cut
+
+sub images {
+    my $self = shift;
+
+    $self->_extract_images unless defined $self->{images};
+
+    return wantarray ? @{ $self->{images} } : $self->{images};
+}
+
+=head2 $ie->find_image()
+
+Finds an image in the current page. It returns a
+L<WWW::Mechanize::Image> object which describes the image.  If it fails
+to find an image it returns undef.
+
+You can select which link to find by passing in one or more of these
+key/value pairs:
+
+=over 4
+
+=item * C<< alt => 'string' >> and C<< alt_regex => qr/regex/, >>
+
+C<alt> matches the ALT attribute of the image against I<string>, which must be a
+n
+exact match. To select a image with an ALT tag that is exactly "download", use
+
+    $mech->find_image( alt  => "download" );
+
+C<alt_regex> matches the ALT attribute of the image  against a regular
+expression.  To select an image with an ALT attribute that has "download"
+anywhere in it, regardless of case, use
+
+    $mech->find_image( alt_regex => qr/download/i );
+
+=item * C<< url => 'string', >> and C<< url_regex => qr/regex/, >>
+
+Matches the URL of the image against I<string> or I<regex>, as appropriate.
+The URL may be a relative URL, like F<foo/bar.html>, depending on how
+it's coded on the page.
+
+=item * C<< url_abs => string >> and C<< url_abs_regex => regex >>
+
+Matches the absolute URL of the image against I<string> or I<regex>,
+as appropriate.  The URL will be an absolute URL, even if it's relative
+in the page.
+
+=item * C<< tag => string >> and C<< tag_regex => regex >>
+
+Matches the tag that the image came from against I<string> or I<regex>,
+as appropriate.  The C<tag_regex> is probably most useful to check for
+more than one tag, as in:
+
+    $mech->find_image( tag_regex => qr/^(img|input)$/ );
+
+The tags supported are C<< <img> >> and C<< <input> >>.
+
+=back
+
+If C<n> is not specified, it defaults to 1.  Therefore, if you don't
+specify any parms, this method defaults to finding the first image on the
+page.
+
+Note that you can specify multiple ALT or URL parameters, which
+will be ANDed together.  For example, to find the first image with
+ALT text of "News" and with "cnn.com" in the URL, use:
+
+    $mech->find_image( image => "News", url_regex => qr/cnn\.com/ );
+
+The return value is a reference to an array containing a
+L<WWW::Mechanize::Image> object for every image in C<< $self->content >>.
+
+=cut
+
+sub find_image {
+    my $self = shift;
+    my %parms = ( n=>1, @_ );
+
+    my $wantall = ( $parms{n} eq "all" );
+
+    $self->_clean_keys( \%parms, qr/^(n|(alt|url|url_abs|tag)(_regex)?)$/ );
+
+    my @images = $self->images or return;
+
+    my $nmatches = 0;
+    my @matches;
+    for my $image ( @images ) {
+        if ( _match_any_image_parms($image,\%parms) ) {
+            if ( $wantall ) {
+                push( @matches, $image );
+            } else {
+                ++$nmatches;
+                return $image if $nmatches >= $parms{n};
+            }
+        }
+    } # for @images
+
+    if ( $wantall ) {
+        return @matches if wantarray;
+        return \@matches;
+    }
+
+    return;
+}
+
+# Used by find_images to check for matches
+# The logic is such that ALL parm criteria that are given must match
+sub _match_any_image_parms {
+    my $image = shift;
+    my $p = shift;
+
+    # No conditions, anything matches
+    return 1 unless keys %$p;
+
+    return if defined $p->{url}
+        and !( $image->url eq $p->{url} );
+    return if defined $p->{url_regex}
+        and !( $image->url =~ $p->{url_regex} );
+    return if defined $p->{url_abs}
+        and !( $image->url_abs eq $p->{url_abs} );
+    return if defined $p->{url_abs_regex}
+        and !( $image->url_abs =~ $p->{url_abs_regex} );
+    return if defined $p->{alt}
+        and !( defined($image->alt) and $image->alt eq $p->{alt} );
+    return if defined $p->{alt_regex}
+        and !( defined($image->alt) and $image->alt =~ $p->{alt_regex} );
+    return if defined $p->{tag}
+        and !( $image->tag and lc( $image->tag ) eq lc( $p->{tag} ) );
+    return if defined $p->{tag_regex}
+        and !( $image->tag and $image->tag =~ $p->{tag_regex} );
+
+    # Success: everything that was defined passed.
+    return 1;
+}
+
+=head2 $ie->find_all_images( ... )
+
+Returns all the images on the current page that match the criteria.  The
+method for specifying image criteria is the same as in C<L<find_image()>>.
+Each of the images returned is a L<WWW::Mechanize::Image> object.
+
+In list context, C<find_all_images()> returns a list of the images.
+Otherwise, it returns a reference to the list of images.
+
+C<find_all_images()> with no parameters returns all images in the
+page.
+
+
+=cut
+
+sub find_all_images {
+    my $self = shift;
+    return $self->find_image( @_, n=>'all' );
+}
+
+=head1 FORM METHODS
+
+=head2 $ie->forms
+
+Lists all the forms on the current page.  Each form is an
+Win32::IE::Form object.  In list context, returns a list of all forms.
+In scalar context, returns an array reference of all forms.
+
+=cut
+
+sub forms {
+    my $self = shift ;
+    $self->_extract_forms unless defined $self->{forms};
+
+    return wantarray ? @{ $self->{forms} } : $self->{forms};
+}
 
 =head2 $ie->form_number( $number )
 
@@ -285,7 +777,7 @@ sub form_number {
 
     my $number = shift || 1;
     $self->_extract_forms unless defined $self->{forms};
-    if ( $number <= @{ $self->{forms} } ) {
+    if ( $self->{forms} && $number <= @{ $self->{forms} } ) {
         $self->{cur_form} = $self->{forms}[ $number - 1 ];
     } else {
         $self->warn( "There is no form numbered $number." );
@@ -320,6 +812,8 @@ sub form_name {
 
 =head2 $ie->field( $name[, $value[, $index]] )
 
+=head2 $ie->field( $name, \@values[, $number ] )
+
 Given the name of a field, set its value to the value specified.  This
 applies to the current form (as set by the C<L<form_name()>> or
 C<L<form_number()>> method or defaulting to the first form on the page).
@@ -333,13 +827,44 @@ sub field {
     my $self = shift;
 
     my( $name, $value, $index ) = @_;
-    defined $self->{cur_form} or $self->form_number( 1 );
+    my $form = $self->current_form;
 
-    my @inputs = $self->{cur_form}->find_input( $name );
+    my @inputs = $form->find_input( $name );
     @inputs or $self->warn( "No '$name' parameter exists" );
     $index ||= 1;
     my $control = $inputs[ $index - 1 ];
     defined $value ? $control->value( $value ) : $control->value();
+}
+
+=head2 $ie->select( $name, $value )
+
+=head2 $ie->select( $name, \@values )
+
+Given the name of a C<select> field, set its value to the value
+specified.  If the field is not E<lt>select multipleE<gt> and the
+C<$value> is an array, only the B<first> value will be set. Passing
+C<$value> as a hash with an C<n> key selects an item by number
+(e.g. C<{n => 3> or C<{n => [2,4]}>).  The numbering starts at 1.
+This applies to the current form (as set by the C<L<form()>> method or
+defaulting to the first form on the page).
+
+Returns 1 on successfully setting the value. On failure, returns
+undef and calls C<$self->warn()> with an error message.
+
+=cut
+
+sub select {
+    my $self = shift;
+    my( $name, $value ) = @_;
+
+    my $form = $self->current_form;
+    my $input = $form->find_input( $name, 'select' );
+    if ( !$input ) {
+        $self->warn( "Select '$name' not found." );
+        return;
+    }
+    $input->select_value( $value );
+    return 1;
 }
 
 =head2 $ie->set_fields( %arguments )
@@ -364,17 +889,23 @@ page).
 sub set_fields {
     my $self = shift;
 
-    $self->form_number( 1 ) unless defined $self->{cur_form};
-
-    my $form = $self->{cur_form};
+    my $form = $self->current_form;
     my %opt = @_ ? UNIVERSAL::isa( $_[0], 'HASH' ) ? %{ $_[0] } : @_ : ();
     while ( my( $fname, $value ) = each %opt ) {
         if ( ref $value eq 'ARRAY' ) {
             my( $input ) = $form->find_input( $fname, undef, $value->[1] );
-            $input->value( $value->[0] );
+            if ( $input ) {
+                $input->value( $value->[0] );
+            } else {
+                warn( "No inputcontrol by the name '$fname'" );
+            }
         } else {
             my( $input ) = $form->find_input( $fname );
-            $input->value( $value );
+            if ( $input ) {
+                $input->value( $value );
+            } else {
+                warn( "No inputcontrol by the name '$fname'" );
+            }
         }
     }
 }
@@ -405,7 +936,7 @@ specify the first radio button with
 
 Field values and specifiers can be intermixed, hence
 
-    $ie->set_visible( "fred", "secret", [ option => "Checking" ] ) ;
+    $ie->set_visible( "fred", "secret", [ select => "Checking" ] ) ;
 
 would set the first two fields to "fred" and "secret", and the I<next>
 C<OPTION> menu field to "Checking".
@@ -455,11 +986,12 @@ will cause the checkbox to be unticked.
 sub tick {
     my $self = shift;
 
-    $self->form_number( 1 ) unless defined $self->{cur_form};
+    my $form = $self->current_form;
+
     my( $name, $value, $set ) = @_;
     $set = 1 if @_ <= 2;
     my @check_boxes = grep $_->value eq $value
-        => $self->{cur_form}->find_input( $name, 'checkbox' );
+        => $form->find_input( $name, 'checkbox' );
 
     $self->warn( "No checkbox '$name'  for value '$value' in form." )
         unless @check_boxes;
@@ -482,6 +1014,34 @@ sub untick {
     $self->tick( @_[0, 1], undef );
 }
 
+=head2 $mech->value( $name, $number )
+
+Given the name of a field, return its value. This applies to the current
+form (as set by the C<form()> method or defaulting to the first form on
+the page).
+
+The option I<$number> parameter is used to distinguish between two fields
+with the same name.  The fields are numbered from 1.
+
+If the field is of type file (file upload field), the value is always
+cleared to prevent remote sites from downloading your local files.
+To upload a file, specify its file name explicitly.
+
+=cut
+
+sub value {
+    my $self = shift;
+    my $name = shift;
+    my $number = shift || 1;
+
+    my $form = $self->current_form;
+    if ( $number > 1 ) {
+        return $form->find_input( $name, undef, $number )->value();
+    } else {
+        return $form->value( $name );
+    }
+}
+
 =head1 Form submission methods
 
 =head2 $ie->click( $button )
@@ -496,13 +1056,13 @@ name of the button to be clicked. I have not found a way to set the
 sub click {
     my( $self, $button ) = @_;
 
-    $self->form_number( 1 ) unless defined $self->{cur_form};
+    my $form = $self->current_form;
     
     my( $toclick ) = sort { 
         ${$a}->{sourceIndex} <=> ${$b}->{sourceIndex} 
-    } $self->{cur_form}->find_input( $button, 'button' ),
-      $self->{cur_form}->find_input( $button, 'image' ),
-      $self->{cur_form}->find_input( $button, 'submit' );
+    } $form->find_input( $button, 'button' ),
+      $form->find_input( $button, 'image' ),
+      $form->find_input( $button, 'submit' );
 
     $toclick and $toclick->click;
     $self->_wait_while_busy;
@@ -546,8 +1106,7 @@ sub click_button {
         }
     }
 
-    defined $self->{cur_form} or $self->form_number( 1 );
-    my $form = $self->{cur_form};
+    my $form = $self->current_form;
     my @buttons = sort { 
         ${$a}->{sourceIndex} <=> ${$b}->{sourceIndex} 
     } $form->find_input( $args{name}, 'button' ),
@@ -588,9 +1147,9 @@ you call the C<click_button()> method with submit button.
 sub submit {
     my $self = shift;
 
-    $self->form_number( 1 ) unless defined $self->{cur_form};
+    my $form = $self->current_form;
 
-    $self->{cur_form}->submit;
+    $form->submit;
     $self->_wait_while_busy;
 }
 
@@ -666,245 +1225,7 @@ sub submit_form {
     return $self->success;
 }
 
-=head1 Status methods
-
-=head2 $ie->success
-
-Return true for ReadyState >= 2;
-
-=cut
-
-sub success { $_[0]->{agent}->ReadyState >= 2 }
-
-=head2 $ie->uri
-
-Return the URI of this document (as an URI object).
-
-=cut
-
-sub uri { URI->new( $_[0]->{agent}->LocationURL ) }
-
-=head2 $ie->ct
-
-Fetch the C<mimeType> from the C<< $ie->Document >>. IE does not
-return the MIME type in a way we expect.
-
-=cut
-
-sub ct { 
-    my $ct = $_[0]->{agent}->Document->mimeType;
-    CASE: {
-        local $_ = $ct;
-        /^HTML Document/i and return "text/html";
-        /^(\w+) Image/i   and return "text/\L$1";
-
-        return $_;
-    }
-}
-
-=head2 $ie->content
-
-Fetch the C<outerHTML> from the C<< $ie->Document->documentElement >>.
-
-I have found no way to get to the exact contents of the document.
-This is basically the interpretation of IE of what the HTML looks like
-and beware all tags are upcased :(
-
-=cut
-
-sub content { $_[0]->{agent}->Document->documentElement->{outerHTML} }
-
-=head2 $ie->forms
-
-When called in a list context, returns a list of the forms found in the
-last fetched page. In a scalar context, returns a reference to an array
-with those forms. The forms returned are all C<Win32::IE::Form> objects.
-
-=cut
-
-sub forms {
-    my $self = shift;
-
-    defined $self->{forms} or $self->{forms} = $self->_extract_forms;
-
-    return wantarray ? @{ $self->{forms} } : $self->{forms};
-}
-
-=head2 $ie->current_form
-
-Returns the current form as an C<Win32::IE::Form> object.
-
-=cut
-
-sub current_form {
-    my $self = shift;
-    defined $self->{cur_form} or $self->form_number( 1 );
-    $self->{cur_form};
-}
-
-=head2 $ie->links
-
-When called in a list context, returns a list of the links found in
-the last fetched page. In a scalar context it returns a reference to
-an array with those links. The links returned are all
-C<Win32::IE::Link> objects.
-
-=cut
-
-sub links {
-    my $self = shift;
-
-    defined $self->{links} or $self->{linkss} = $self->_extract_links;
-
-    return wantarray ? @{ $self->{links} } : $self->{links};
-}
-
-=head2 $ie->is_html
-
-Return true if this is an HTML Document.
-
-=cut
-
-sub is_html {
-    my $self = shift;
-    return $self->ct eq 'text/html';
-}
-
-=head2 $ie->title
-
-Fetch the C<title> from the C<< $ie->Document >>.
-
-=cut
-
-sub title { $_[0]->{agent}->Document->title }
-
-=head1 Content-handling methods
-
-=head2 $ie->find_link( [%options] )
-
-This method finds a link in the currently fetched page. It returns a
-L<Win32::IE::Link> object which describes the link.  (You'll probably
-be most interested in the C<url()> property.)  If it fails to find a
-link it returns undef.
-
-You can take the URL part and pass it to the C<get()> method.  If that's
-your plan, you might as well use the C<follow_link()> method directly,
-since it does the C<get()> for you automatically.
-
-Note that C<< <FRAME SRC="..."> >> tags are parsed out of the the HTML
-and treated as links so this method works with them.
-
-You can select which link to find by passing in one or more of these
-key/value pairs:
-
-=over 4
-
-=item * text => string
-
-Matches the text of the link against I<string>, which must be an
-exact match.
-
-To select a link with text that is exactly "download", use
-
-    $a->find_link( text => "download" );
-
-=item * text_regex => regex
-
-Matches the text of the link against I<regex>.
-
-To select a link with text that has "download" anywhere in it,
-regardless of case, use
-
-    $a->find_link( text_regex => qr/download/i );
-
-=item * url => string
-
-Matches the URL of the link against I<string>, which must be an
-exact match.  This is similar to the C<text> parm.
-
-=item * url_regex => regex
-
-Matches the URL of the link against I<regex>.  This is similar to
-the C<text_regex> parm.
-
-=item * n => I<number>
-
-Matches against the I<n>th link.
-
-The C<n> parms can be combined with the C<text*> or C<url*> parms
-as a numeric modifier.  For example,
-C<< text => "download", n => 3 >> finds the 3rd link which has the
-exact text "download".
-
-=back
-
-If C<n> is not specified, it defaults to 1.  Therefore, if you don't
-specify any parms, this method defaults to finding the first link on the
-page.
-
-Note that you can specify multiple text or URL parameters, which
-will be ANDed together.  For example, to find the first link with
-text of "News" and with "cnn.com" in the URL, use:
-
-    $ie->find_link( text => "News", url_regex => qr/cnn\.com/ );
-
-=cut
-
-sub find_link {
-    my $self = shift;
-
-    $self->_extract_links unless defined $self->{links};
-
-    my %opt = @_ ? UNIVERSAL::isa( $_[0], 'HASH' ) ? %{ $_[0] } : @_ : ();
-    $opt{n} = 1 unless exists $opt{n};
-    my $wantall = lc $opt{n} eq 'all';
-
-    foreach my $key ( keys %opt ) {
-        my $val = $opt{ $key };
-        if ( $key !~ /^(n|(text|url|name|tag)(_regex)?)$/ ) {
-            $self->warn( qq{Unknown link-finding parameter "$key"} );
-            delete $opt{$key};
-            next;
-        }
-
-        if ( ($key =~ /_regex$/) && (ref($val) ne "Regexp" ) ) {
-            $self->warn( qq{$val passed as $key is not a regex} );
-            delete $opt{$key};
-            next;
-        }
-    }
-
-    my $matchfunc = __setup_matchfunc( %opt );
-
-    my( $cnt, @found ) = 0;
-    for my $link ( @{ $self->{links} } ) {
-        ++$cnt, push @found, $link if $matchfunc->( $link );
-        return $link if !$wantall && $cnt >= $opt{n};
-    }
-    
-    return unless $wantall;
-    return wantarray ? @found : \@found;
-}
-
-=head2 $ie->find_all_links( %opt )
-
-Returns all the links on the current page that match the criteria.
-The method for specifying link criteria is the same as in
-C<find_link()>.  Each of the links returned is in the same format
-as in C<find_link()>.
-
-In list context, C<find_all_links()> returns a list of the links.
-Otherwise, it returns a reference to the list of links.
-
-C<find_all_links()> with no parameters returns all links in the
-page.
-
-=cut
-
-sub find_all_links {
-    my $self = shift;
-    $self->find_link( @_, n => 'all' );
-}
+=head1 MISCELANEOUS METHODS
 
 =head2 $ie->quiet( [$state] )
 
@@ -1080,12 +1401,13 @@ that mimics L<HTML::Form>.
 
 sub _extract_forms {
     my $self = shift;
-
     my $doc = $self->{agent}->Document;
-    $self->{forms} = undef;
+
+    my @forms;
     for ( my $i = 0; $i < $doc->forms->length; $i++ ) {
-        push @{ $self->{forms} }, Win32::IE::Form->new( $doc->forms( $i ) );
+        push @forms, __new_form( $doc->forms( $i ) );
     }
+    $self->{forms} = \@forms;
 
     return wantarray ? @{ $self->{forms} } : $self->{forms};
 }
@@ -1117,9 +1439,32 @@ sub _extract_links {
         my $obj = $doc->all( $i );
         next unless $obj->tagName =~ /^(?:IFRAME|FRAME|AREA|A)$/i;
         next if lc $obj->tagName eq 'a' && !$obj->href;
-        push @links, Win32::IE::Link->new( $doc->all( $i ) );
+        push @links, __new_link( $doc->all( $i ) );
     }
     $self->{links} = \@links;
+
+    return wantarray ? @{ $self->{links} } : $self->{links};
+}
+
+=head2 $ie->_extract_images()
+
+Return a list of images using the C<< $ie->Document->images >>
+interface. All images are mapped onto the L<Win32::IE::Image> interface
+that mimics L<WWW::Mechanize::Images>.
+
+=cut
+
+sub _extract_images {
+    my $self = shift;
+    my $doc = $self->{agent}->Document;
+
+    my @images;
+    for ( my $i = 0; $i < $doc->images->length; $i++ ) {
+        push @images, __new_image( $doc->images( $i ) );
+    }
+    $self->{images} = \@images;
+
+    return wantarray ? @{ $self->{forms} } : $self->{forms};
 }
 
 =head2 $self->_wait_while_busy()
@@ -1139,30 +1484,64 @@ sub _wait_while_busy {
     # we might need to check if the first one has frames
     # and do some more checking.
     my $sleep = 0; # 0.4;
-    while ( $agent->{Busy} == 1 ) { $sleep and sleep( $sleep ) }
-    return unless $agent->{ReadyState};
-    while ( $agent->{ReadyState} != 4 ) { $sleep and sleep( $sleep ) }
+#    while ( $agent->{Busy} == 1 ) { $sleep and sleep( $sleep ) }
+#    return unless $agent->{ReadyState};
+    while ( $agent->{ReadyState} <= 2 ) {
+        $sleep and sleep( $sleep );
+    }
 
-    $self->{ $_ } = undef for qw( forms cur_form links );
+    $self->{ $_ } = undef for qw( forms cur_form links images );
     return $self->success;
 }
 
-=head2 $self->warn( $msg )
+=head2 warn( @messages )
 
-Uses Carp::carp as that seems more useful.
+Centralized warning method, for diagnostics and non-fatal problems.
+Defaults to calling C<CORE::warn>, but may be overridden by setting
+C<onwarn> in the construcotr.
 
 =cut
 
 sub warn {
     my $self = shift;
-    $self->{quiet} and return;
+
+    return unless my $handler = $self->{onwarn};
+
+    return if $self->quiet;
+
+    $handler->(@_);
+}
+
+=head2 die( @messages )
+
+Centralized error method.  Defaults to calling C<CORE::die>, but
+may be overridden by setting C<onerror> in the constructor.
+
+=cut
+
+sub die {
+    my $self = shift;
+
+    return unless my $handler = $self->{onerror};
+
+    $handler->(@_);
+}
+
+# Not a method
+sub __warn {
 
     eval "require Carp";
     if ( $@ ) {
-        warn @_;
+        CORE::warn @_;
     } else {
         &Carp::carp;
     }
+}
+
+# Not a method
+sub __die {
+    require Carp;
+    &Carp::croak; # pass thru
 }
 
 =head2 $self->_extra_headers( )
@@ -1222,39 +1601,6 @@ sub __prop_value($;$) {
     }
 }
 
-=head2 __setup_matchfunc( %opt )
-
-Stolen from L<WWW::Mechanize>, but adjusted for the use in this module.
-
-=cut
-
-sub __setup_matchfunc {
-    my %opt = @_;
-    my @cond;
-
-    push @cond, q/ $_[0]->url  eq $opt{url} /
-        if defined $opt{url};
-    push @cond, q/ $_[0]->url  =~ $opt{url_regex} /
-        if defined $opt{url_regex};
-    push @cond, q/ $_[0]->text eq $opt{text} /
-        if defined $opt{text};
-    push @cond, q/ $_[0]->text =~ $opt{text_regex} /
-        if defined $opt{text_regex};
-    push @cond, q/ $_[0]->name eq $opt{name} /
-        if defined $opt{name};
-    push @cond, q/ $_[0]->name =~ $opt{name_regex} /
-        if defined $opt{name_regex};
-    push @cond, q/ lc $_[0]->tag  eq lc $opt{tag} /
-        if defined $opt{tag};
-    push @cond, q/ lc $_[0]->tag =~ $opt{tag_regex} /
-        if defined $opt{tag_regex};
-
-    {
-        local $" = " && ";
-        return @cond ? eval "sub { @cond }" : sub { 1 };
-    }
-}
-
 =head2 __authorization_basic( $user, $pass )
 
 Return a HTTP "Authorization: Basic xxx" header.
@@ -1270,6 +1616,33 @@ sub __authorization_basic {
            MIME::Base64::encode_base64( "$user:$pass" ) .
            "\015\012";
 }
+
+=head1 ACCESS TO SUBPACKAGES
+
+These subs just supply an interface to the Win32::IE::* sub objects.
+
+=head2 __new_form( $form_obj )
+
+Retuns a new Win32::IE::Form. NOT a method!
+
+=head2 __new_input( $input_obj )
+
+Retuns a new Win32::IE::Input. NOT a method!
+
+=head2 __new_link( $link_obj )
+
+Retuns a new Win32::IE::Link. NOT a method!
+
+=head2 __new_image( $image_obj )
+
+Retuns a new Win32::IE::Image. NOT a method!
+
+=cut
+
+sub __new_form  { return Win32::IE::Form->new( @_ )  }
+sub __new_input { return Win32::IE::Input->new( @_ ) }
+sub __new_link  { return Win32::IE::Link->new( @_ )  }
+sub __new_image { return Win32::IE::Image->new( @_ ) }
 
 1;
 
@@ -1430,6 +1803,8 @@ sub find_input {
     my $form = $$self;
 
     my( $name, $type, $index ) = @_;
+    my $typere = qr/.*/;
+    $type and $typere = $type =~ /^select/i ? qr/^$type/i : qr/^$type$/i; 
 
     if ( wantarray ) {
         my( $cnt, @res ) = ( 0 );
@@ -1438,7 +1813,7 @@ sub find_input {
                 $input->name or next;
                 $input->name ne $name and next;
             }
-            $type && lc( $input->type ) ne lc( $type ) and next;
+            $input->type =~ $typere or next;
             $cnt++;
             $index && $index ne $cnt and next;
             push @res, $input;
@@ -1451,7 +1826,7 @@ sub find_input {
                 $input->name or next;
                 $input->name ne $name and next;
             }
-            $type && lc( $input->type ) ne lc( $type ) and next;
+            $input->type =~ $typere or next;
             --$index and next;
             return $input;
         }
@@ -1576,10 +1951,24 @@ sub select_value {
     my %vals;
     if ( @_ ) {
         my @values = @_;
+        if ( @values == 1 && ref $values[0] eq 'HASH' ) {
+            my @ords = ref $values[0]->{n}
+                ? @{ $values[0]->{n} } : $values[0]->{n};
+            @values = ();
+            foreach my $i ( @ords ) {
+                $i > 0 && $i <= $input->options->{length} and
+                    push @values, $input->options( $i - 1 )->{value};
+            }
+        }
         @values = @{ $values[0] } if @values == 1 && ref $values[0];
+
+        # Make sure only the last value is set for:
+        # select-one type with multiple values;
+        @values = ( $values[-1] ) if lc( $input->type ) eq 'select-one';
+ 
         %vals = map { ( $_ => undef ) } @values;
 
-        for ( my $i = 0; $i < $input->{options}->{length}; $i++ ) {
+        for ( my $i = 0; $i < $input->options->{length}; $i++ ) {
             $input->options( $i )->{selected} = 
                 exists $vals{ $input->options( $i )->{value} };
         }
@@ -1699,9 +2088,73 @@ sub tag {
     return $self->{tagName};
 }
 
-=head1 COPYRIGHT
+package Win32::IE::Image;
 
-Copyright 2003, Abe Timmerman <abeltje@cpan.org>. All rights reserved
+=head1 PACKAGE Win32::IE::Image
+
+Win32::IE::Image - A bit like WWW::Mechanize::Image
+
+=head1 METHODS
+
+=head2 Win32::IE::Image->new( $element )
+
+Create a new object, that implements url, base, tag, height, width,
+alt and name
+
+=cut
+
+sub new {
+    my $class = shift;
+
+    bless \( my $self = shift ), $class;
+}
+
+=head2 $image->url
+
+Return the SRC attribute from the IMG tag.
+
+=cut
+
+sub url {
+    my $self = ${ $_[0] };
+    return $self->{SRC};
+}
+
+=head2 $image->tag
+
+Return 'IMG' for images.
+
+=cut
+
+sub tag {
+    my $self = ${ $_[0] };
+    return $self->{TAGNAME};
+}
+
+sub width {
+    my $self = ${ $_[0] };
+    return $self->{WIDTH};
+}
+
+sub height {
+    my $self = ${ $_[0] };
+    return $self->{HEIGHT};
+}
+
+sub alt {
+    my $self = ${ $_[0] };
+    return $self->{ALT};
+}
+
+=head1 BUGS
+
+Yes, there are bugs. The test-suite doesn't fully cover the codebase.
+
+Please report bugs to L<http://rt.cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright MMIV, Abe Timmerman <abeltje@cpan.org>. All rights reserved
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

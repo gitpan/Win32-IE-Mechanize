@@ -1,17 +1,27 @@
-MANIFEST                   $Id: MANIFEST 141 2004-04-12 09:37:19Z abeltje $
+MANIFEST                   $Id: MANIFEST 219 2004-12-29 21:22:38Z abeltje $
 META.yml                   Module meta-data (added by MakeMaker)
 README
 Changes
 Makefile.PL
 lib/Win32/IE/Mechanize.pm
+t/00props.t
 t/basic.t
+t/field.t
 t/find_link.t
 t/formbasics.t
+t/frames.t
 t/jstest.t
+t/select.t
+t/swaplist.t
 t/tick.t
 t/basic.html
+t/field.html
 t/find_link.html
 t/formbasics.html
+t/frames.html
 t/jstest.html
 t/jstestok.html
+t/select.html
+t/slowframe.html
+t/swaplist.html
 t/tick.html

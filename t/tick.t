@@ -1,33 +1,38 @@
 #!/usr/bin/perl -w
 use strict;
 use URI::file;
+use Cwd;        # These help the cygwin tests
+require Win32;
+my $base = Win32::GetCwd();
 
-# $Id: tick.t 76 2003-11-30 22:00:38Z abeltje $
+# $Id: tick.t 216 2004-12-29 18:32:42Z abeltje $
 
 use Test::More;
-plan $^O eq 'MSWin32' 
+plan $^O =~ /MSWin32|cygwin/ 
     ? (tests => 6) : (skip_all => "This is not MSWin32!");
 
 use_ok( 'Win32::IE::Mechanize' );
 
-my $mech = Win32::IE::Mechanize->new( visible => $ENV{WIM_VISIBLE} );
-isa_ok( $mech, "Win32::IE::Mechanize" );
+local $^O = 'MSWin32';
+my $uri = URI::file->new_abs( "$base/t/tick.html" )->as_string;
 
-my $uri = URI::file->new_abs( "t/tick.html" )->as_string;
-$mech->get( $uri );
-ok $mech->success, "->success";
+my $ie = Win32::IE::Mechanize->new( visible => $ENV{WIM_VISIBLE} );
+isa_ok( $ie, "Win32::IE::Mechanize" );
 
-ok my $base = $mech->uri, "Got an uri back";
+$ie->get( $uri );
+ok $ie->success, "->success";
 
-my $form = $mech->form_number(1);
+ok my $prev_uri = $ie->uri, "Got an uri back";
+
+my $form = $ie->form_number(1);
 isa_ok( $form, 'Win32::IE::Form' );
 
-$mech->tick("foo","hello");
-$mech->tick("foo","bye");
-$mech->untick("foo","hello");
+$ie->tick("foo","hello");
+$ie->tick("foo","bye");
+$ie->untick("foo","hello");
 
-$mech->click( 'submit' );
+$ie->click( 'submit' );
 
-is $mech->uri, "$base?foo=bye&submit=Submit", "(un)tick actions";
+is $ie->uri, "$prev_uri?foo=bye&submit=Submit", "(un)tick actions";
 
-$mech->close;
+$ENV{WIM_VISIBLE} or $ie->close;

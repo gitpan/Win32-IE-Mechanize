@@ -1,14 +1,17 @@
 #! perl -w
 use strict;
 use URI::file;
+use Cwd;        # These help the cygwin tests
+require Win32;
+my $base = Win32::GetCwd();
 
 
-# $Id: find_link.t 76 2003-11-30 22:00:38Z abeltje $
+# $Id: find_link.t 216 2004-12-29 18:32:42Z abeltje $
 
 use Test::More;
 
-plan $^O eq 'MSWin32' 
-    ? (tests => 55) : (skip_all => "This is not MSWin32!");
+plan $^O =~ /MSWin32|cygwin/i 
+    ? (tests => 60) : (skip_all => "This is not MSWin32!");
 
 use_ok( 'Win32::IE::Mechanize' );
 
@@ -18,13 +21,20 @@ sub as_WML($) {
     return [ $link->url, $link->text, $link->name, lc $link->tag ];
 }
 
+local $^O = 'MSWin32';
+my $uri = URI::file->new_abs( "$base/t/find_link.html" )->as_string;
+
 my $t = Win32::IE::Mechanize->new( visible => $ENV{WIM_VISIBLE} );
 isa_ok( $t, 'Win32::IE::Mechanize' );
 
-my $uri = URI::file->new_abs( "t/find_link.html" )->as_string;
-
-$t->get( $uri );
+ok $t->get( $uri ), "get($uri)";
 ok( $t->success, "Fetched $uri" ) or die "Can't get test page";
+
+my @all_links1 = $t->links;
+my $all_links2 = $t->links;
+is scalar @all_links1, 18,  "Returned all links (18)";
+is scalar @$all_links2, 18, "Returned all links from scalar context";
+is_deeply \@all_links1, $all_links2, "structures are the same";
 
 my $x;
 $x = $t->find_link();
@@ -74,18 +84,26 @@ isa_ok( $x, 'Win32::IE::Link' );
 is( as_WML($x)->[0], "http://c.cpan.org/", "Got c.cpan.org" );
 is( $x->url, "http://c.cpan.org/", "Got c.cpan.org" );
 
-my @wanted_links= (
-   [ "http://a.cpan.org/", "CPAN A", undef, "a" ], 
-   [ "http://b.cpan.org/", "CPAN B", undef, "a" ], 
-   [ "http://c.cpan.org/", "CPAN C", "bongo", "a" ], 
-   [ "http://d.cpan.org/", "CPAN D", undef, "a" ], 
-);
-my @links = map as_WML( $_ ) => $t->find_all_links( text_regex => qr/CPAN/ );
-is_deeply( \@links, \@wanted_links, "Correct links came back" )
-    || diag "@links";
-
-my $linkref = [ map as_WML( $_ ) => $t->find_all_links( text_regex => qr/CPAN/ ) ];
-is_deeply( $linkref, \@wanted_links, "Correct links came back" );
+{
+    my @wanted_links= (
+       [ "http://a.cpan.org/", "CPAN A", undef, "a" ], 
+       [ "http://b.cpan.org/", "CPAN B", undef, "a" ], 
+       [ "http://c.cpan.org/", "CPAN C", "bongo", "a" ], 
+       [ "http://d.cpan.org/", "CPAN D", undef, "a" ], 
+    );
+    my @links1 = map as_WML( $_ ) => $t->find_all_links( text_regex => qr/CPAN/ );
+    my @links2 = map as_WML( $_ ) => @{
+        scalar $t->find_all_links( text_regex => qr/CPAN/ )
+    };
+    is_deeply( \@links1, \@wanted_links, "Correct links came back" )
+        || diag "@links1";
+    is_deeply \@links2, \@wanted_links, "Same links in scalar context";
+    
+    my $linkref = [ map as_WML( $_ ) => $t->find_all_links(
+         text_regex => qr/CPAN/
+    ) ];
+    is_deeply( $linkref, \@wanted_links, "Correct links came back" );
+}
 
 # Check combinations of links
 $x = $t->find_link( text => "News" );
@@ -113,28 +131,37 @@ AREA_CHECKS: {
 	[ "http://www.cnn.com/", "News", "Fred", "a" ],
 	[ "http://www.cnn.com/area", undef, undef, "area" ],
     );
-    my @links = map as_WML( $_ ) => $t->find_all_links( url_regex => qr/cnn\.com/ );
+    my @links = map as_WML( $_ ) => $t->find_all_links(
+        url_regex => qr/cnn\.com/
+    );
     is_deeply( \@links, \@wanted_links, "Correct links came back" );
 
-    my $linkref = [ map as_WML( $_ ) =>  $t->find_all_links( url_regex => qr/cnn\.com/ ) ];
+    my $linkref = [ map as_WML( $_ ) =>  $t->find_all_links(
+        url_regex => qr/cnn\.com/
+    ) ];
     is_deeply( $linkref, \@wanted_links, "Correct links came back" );
 }
 
 $x = $t->find_link( name => "bongo" );
 isa_ok( $x, 'Win32::IE::Link' );
-is_deeply( as_WML($x), [ "http://c.cpan.org/", "CPAN C", "bongo", "a" ], 'Got the CPAN C link' );
+is_deeply( as_WML($x), [ "http://c.cpan.org/", "CPAN C", "bongo", "a" ],
+           'Got the CPAN C link' );
 
 $x = $t->find_link( name_regex => qr/^[A-Z]/, n => 2 );
 isa_ok( $x, 'Win32::IE::Link' );
-is_deeply( as_WML($x), [ "http://www.cnn.com/", "News", "Fred", "a" ], 'Got 2nd link that begins with a capital' );
+is_deeply( as_WML($x), [ "http://www.cnn.com/", "News", "Fred", "a" ],
+           'Got 2nd link that begins with a capital' );
 
+my @as = $t->find_link( tag => 'a', n => 'all' );
 $x = $t->find_link( tag => 'a', n => 3 );
 isa_ok( $x, 'Win32::IE::Link' );
-is_deeply( as_WML($x), [ "http://b.cpan.org/", "CPAN B", undef, "a" ], 'Got 3rd <A> tag' );
+is_deeply as_WML($x), [ "http://b.cpan.org/", "CPAN B", undef, "a" ],
+          'Got 3rd <A> tag';
 
 $x = $t->find_link( tag_regex => qr/^(a|frame)$/i, n => 7 );
 isa_ok( $x, 'Win32::IE::Link' );
-is_deeply( as_WML($x), [ "http://d.cpan.org/", "CPAN D", undef, "a" ], 'Got 7th <A> or <FRAME> tag' );
+is_deeply as_WML($x), [ "http://d.cpan.org/", "CPAN D", undef, "a" ],
+          'Got 7th <A> or <FRAME> tag';
 
 TODO: {
     $x = $t->find_link( text => "Rebuild Index" );
@@ -144,4 +171,5 @@ TODO: {
                [ "/cgi-bin/MT/mt.cgi", "Rebuild Index", undef, "a" ],
                'Got the JavaScript link' );
 }
-$t->close;
+
+$ENV{WIM_VISIBLE} or $t->close;

@@ -1,25 +1,28 @@
 #! perl -w
 use strict;
-use FindBin;
 use URI::file;
+use Cwd;        # These help the cygwin tests
+require Win32;
+my $base = Win32::GetCwd();
 
-# $Id: formbasics.t 120 2004-03-28 15:02:29Z abeltje $
+# $Id: formbasics.t 216 2004-12-29 18:32:42Z abeltje $
 
 use Test::More;
 
-plan $^O eq 'MSWin32' 
-    ? (tests => 17) : (skip_all => "This is not MSWin32!");
+plan $^O =~ /MSWin32|cygwin/i
+    ? (tests => 19) : (skip_all => "This is not MSWin32!");
 
 use_ok 'Win32::IE::Mechanize';
+
+local $^O = 'MSWin32';
+my $url = URI::file->new_abs( "$base/t/formbasics.html" )->as_string;
 
 my $ie = Win32::IE::Mechanize->new( visible => $ENV{WIM_VISIBLE}, quiet => 1 );
 
 isa_ok $ie, "Win32::IE::Mechanize";
-isa_ok $ie->{agent}, "Win32::OLE";
+isa_ok $ie->agent, "Win32::OLE";
 
-my $url = (URI::file->new_abs( "t/formbasics.html" ))->as_string;
-
-$ie->get( $url );
+ok $ie->get( $url ), "get($url)";
 
 is $ie->title, "Test-forms Page", "->title method";
 
@@ -34,9 +37,11 @@ is scalar @forms, 2, "Form count";
     my $form_nb = $ie->form_number(2);
     is $form_nb->name, 'form2', "Form name found";
 
-    $ie->field( query => 'Modified' );
+    my( $value ) = $ie->field( query => 'Modified' );
     is $form_nb->value( "query" ), 'Modified',
        "Form field eq browser field";
+    is $ie->value( 'query' ), $value,
+       "value(query) method returns '$value'";
 
     my $form_nm = $ie->form_name( 'form2' );
     is $form_nb, $form_nm, "form-by-name eq form-by-number";
@@ -57,7 +62,7 @@ is scalar @forms, 2, "Form count";
        "Cannot select unknown form";
 }
 
-my $base = $ie->uri;
+my $prev_uri = $ie->uri;
 ok $ie->form_name( 'form2' ), "Selected the form";
 
 $ie->submit_form(
@@ -67,7 +72,7 @@ $ie->submit_form(
         query  => 'text',
     }
 );
-is $ie->uri, "$base?dummy2=filled&query=text",
+is $ie->uri, "$prev_uri?dummy2=filled&query=text",
    "Form submitted";
 
-$ie->close;
+$ENV{WIM_VISIBLE} or $ie->close;
