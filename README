@@ -1,4 +1,4 @@
-Win32::IE::Mechanize version 0.004
+Win32::IE::Mechanize version 0.005
 ==================================
 
 This module is mostly a port of the very popular WWW::Mechanize

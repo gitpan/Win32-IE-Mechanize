@@ -1,0 +1,283 @@
+These changes are from the Subversion repository at
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+
+The filelists have a short symbolic indicator:
+        !  modified
+        +  added
+        -  deleted
+       !>  merged change
+       !<  replaced
+
+Enjoy!
+___________________________________________________________________________
+[   139] By: abeltje                          on 2004-04-09 16:07:58 +0200
+        Log: * [FIX] (Thanks to Hirosi Taguti)
+	       * __authentication_basic() wasn't a method, that is why it
+		 didn't work!
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   138] By: abeltje                          on 2004-04-08 13:29:04 +0200
+        Log: * [ADD]
+	       + Try and set additional headers for Basic Authentication,
+		 see if that works?
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   125] By: abeltje                          on 2004-04-02 14:13:10 +0200
+        Log: * [ADD]
+	       + META.yml
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/META.yml
+           ! /Win32-IE-Mechanize/MANIFEST
+___________________________________________________________________________
+[   124] By: abeltje                          on 2004-03-28 19:05:17 +0200
+        Log: * [ADD]
+	       * forgot to add the new jstest files
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/MANIFEST
+___________________________________________________________________________
+[   123] By: abeltje                          on 2004-03-28 18:13:33 +0200
+        Log: * [ADD]
+	       + Forgot the README (#122)
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/MANIFEST
+___________________________________________________________________________
+[   122] By: abeltje                          on 2004-03-28 18:11:26 +0200
+        Log: * [ADD]
+	       + README for the distribution
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/README
+___________________________________________________________________________
+[   121] By: abeltje                          on 2004-03-28 17:33:47 +0200
+        Log: * [FIX]
+	       * thinko in the new __prop_value() sub
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   120] By: abeltje                          on 2004-03-28 17:02:29 +0200
+        Log: * [CHANGE]
+	       * Quiet down the new "form not found" warnings
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/t/formbasics.t
+___________________________________________________________________________
+[   119] By: abeltje                          on 2004-03-28 16:57:56 +0200
+        Log: * [FIX]
+	       * pre-req should be PREREQ_PM
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/Makefile.PL
+___________________________________________________________________________
+[   118] By: abeltje                          on 2004-03-28 16:52:04 +0200
+        Log: * [CHANGE]
+	       * Complete overhaul. Itegrated most of the WWW::Mechanize
+		 documentation and ordered everything along the same way.
+		 (Thank you Andy Lester!)
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   117] By: abeltje                          on 2004-03-27 16:54:39 +0100
+        Log: * [CHANGE]
+	       * remove stuff that shouldn't be in the distro
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/MANIFEST, /Win32-IE-Mechanize/Makefile.PL
+___________________________________________________________________________
+[   116] By: abeltje                          on 2004-03-27 16:49:15 +0100
+        Log: * [ADD]
+	       + new test to show the added value of using a JavaScript
+		 enabled UserAgent
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/t/jstest.html,
+	     /Win32-IE-Mechanize/t/jstest.t,
+	     /Win32-IE-Mechanize/t/jstestok.html
+___________________________________________________________________________
+[    85] By: abeltje                          on 2003-12-01 17:17:54 +0100
+        Log: * [CHANGE]
+	       * No https on the internal INHOLLAND network
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/bbcheck.pl
+___________________________________________________________________________
+[    84] By: abeltje                          on 2003-12-01 14:29:39 +0100
+        Log: * [FIX]
+	       * Make it install nicer
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/Makefile.PL
+___________________________________________________________________________
+[    83] By: abeltje                          on 2003-12-01 14:11:27 +0100
+        Log: * [CHANGE]
+	       * clean-up and reformat some of the documentation
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[    81] By: abeltje                          on 2003-12-01 11:04:11 +0100
+        Log: * [FIX]
+	       + implement the new user-interface of Win32::IE::Mechanize
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/bbcheck.pl
+___________________________________________________________________________
+[    80] By: abeltje                          on 2003-12-01 11:01:52 +0100
+        Log: * [FIX]
+	       + make url's to get() absolute against the current uri()
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[    79] By: abeltje                          on 2003-12-01 10:49:53 +0100
+        Log: * [ADD]
+	       + simple test for the submit_form() method
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/t/formbasics.t
+___________________________________________________________________________
+[    78] By: abeltje                          on 2003-12-01 10:49:08 +0100
+        Log: * [ADD]
+	       + support for the submit_form() method
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[    77] By: abeltje                          on 2003-11-30 23:40:11 +0100
+        Log: * [FIX] follow_link()
+	       * find_link() returns an object, so call the url() method
+		 on it when you get() the new uri
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[    75] By: abeltje                          on 2003-11-30 22:52:56 +0100
+        Log: * [FIX]
+	       * different reactions on different perls (or IE)
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[    74] By: abeltje                          on 2003-11-30 22:51:05 +0100
+        Log: * [FIX]
+	       * change the html-file name (revision 73)
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/MANIFEST
+___________________________________________________________________________
+[    73] By: abeltje                          on 2003-11-30 22:48:25 +0100
+        Log: * [CHANGE]
+	       * General cleanup of the testfiles
+	       + introduce $ENV{WIM_VISIBLE}
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           - /Win32-IE-Mechanize/t/basics.html
+           ! /Win32-IE-Mechanize/t/basic.t,
+	     /Win32-IE-Mechanize/t/find_link.html,
+	     /Win32-IE-Mechanize/t/find_link.t,
+	     /Win32-IE-Mechanize/t/formbasics.t,
+	     /Win32-IE-Mechanize/t/tick.html, /Win32-IE-Mechanize/t/tick.t
+          !> /Win32-IE-Mechanize/t/basic.html
+	     =(/Win32-IE-Mechanize/t/basics.html:70)
+___________________________________________________________________________
+[    71] By: abeltje                          on 2003-11-30 22:07:58 +0100
+        Log: * [ADD]
+	       + few more tests
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/t/formbasics.t
+___________________________________________________________________________
+[    70] By: abeltje                          on 2003-11-30 21:48:47 +0100
+        Log: * [ADD]
+	       + more testfiles to the MANIFEST
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/MANIFEST, /Win32-IE-Mechanize/t/basic.t,
+	     /Win32-IE-Mechanize/t/find_link.t,
+	     /Win32-IE-Mechanize/t/formbasics.t,
+	     /Win32-IE-Mechanize/t/tick.t
+___________________________________________________________________________
+[    69] By: abeltje                          on 2003-11-30 21:45:47 +0100
+        Log: * [CHANGE]
+	       + Adjust for the new interfaces of Win32::IE::Mechanize
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/bbcheck.pl
+___________________________________________________________________________
+[    68] By: abeltje                          on 2003-11-30 21:07:10 +0100
+        Log: * [ADD]
+	       + A port of the WWW::Mechanize::Link interface
+	       + most of form-handling things
+	       + A port of the tick() and untick() functions
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[    67] By: abeltje                          on 2003-11-30 21:00:42 +0100
+        Log: * [ADD]
+	       + A port of the link tests from WWW::Mechanize
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/t/find_link.html,
+	     /Win32-IE-Mechanize/t/find_link.t
+___________________________________________________________________________
+[    66] By: abeltje                          on 2003-11-30 18:12:23 +0100
+        Log: * [ADD]
+	       + A port of the tick tests from WWW::Mechanize
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/t/tick.html, /Win32-IE-Mechanize/t/tick.t
+___________________________________________________________________________
+[    65] By: abeltje                          on 2003-11-24 02:25:04 +0100
+        Log: * [CHANGE]
+	       * Help persistant cookies, en doe een explicite "logout"
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/bbcheck.pl
+___________________________________________________________________________
+[    62] By: abeltje                          on 2003-11-18 16:59:30 +0100
+        Log: * [CHANGE]
+	       * make it better connected with the data take-in site
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/bbcheck.pl,
+	     /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm,
+	     /Win32-IE-Mechanize/t/formbasics.html,
+	     /Win32-IE-Mechanize/t/formbasics.t
+___________________________________________________________________________
+[    61] By: abeltje                          on 2003-11-16 17:48:49 +0100
+        Log: * [ADD]
+	       + new tests for the forms interface (needs more!)
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/t/formbasics.html,
+	     /Win32-IE-Mechanize/t/formbasics.t
+           ! /Win32-IE-Mechanize/t/basic.t
+___________________________________________________________________________
+[    60] By: abeltje                          on 2003-11-16 17:44:08 +0100
+        Log: * [ADD]
+	       + a new interface to the IE Form object (Win32::IE::Form)
+	       + a new interface to the IE Element object
+		 (Win32::IE::Input)
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[    59] By: abeltje                          on 2003-11-16 13:04:47 +0100
+        Log: * [ADD]
+	       + more testing
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/t/basic.t,
+	     /Win32-IE-Mechanize/t/basics.html
+___________________________________________________________________________
+[    58] By: abeltje                          on 2003-11-16 13:02:28 +0100
+        Log: * [ADD]
+	       + more 'mech' methods added
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[    57] By: abeltje                          on 2003-11-15 15:29:02 +0100
+        Log: * [ADD]
+	       + add some more methods (like mech/LWP)
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[    56] By: abeltje                          on 2003-11-15 12:27:53 +0100
+        Log: * [ADD]
+	       + Start adding some test stuff
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/t, /Win32-IE-Mechanize/t/basic.t,
+	     /Win32-IE-Mechanize/t/basics.html
+___________________________________________________________________________
+[    55] By: abeltje                          on 2003-11-13 23:00:47 +0100
+        Log: * Initial import
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/MANIFEST,
+	     /Win32-IE-Mechanize/Makefile.PL,
+	     /Win32-IE-Mechanize/bbcheck.pl, /Win32-IE-Mechanize/lib,
+	     /Win32-IE-Mechanize/lib/Win32,
+	     /Win32-IE-Mechanize/lib/Win32/IE,
+	     /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[    54] By: abeltje                          on 2003-11-13 22:52:10 +0100
+        Log: * [ADD]
+	       + Een nieuwe branch voor Win32::IE::Mechanize
+        Url: http://www.test-smoke.org/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize
+
+-- Generated by 'svnchanges' (0.013) --

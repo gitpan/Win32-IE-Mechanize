@@ -1,9 +1,9 @@
 package Win32::IE::Mechanize;
 use strict;
 
-# $Id: Mechanize.pm 121 2004-03-28 15:33:47Z abeltje $
+# $Id: Mechanize.pm 142 2004-04-12 10:20:23Z abeltje $
 use vars qw( $VERSION );
-$VERSION = '0.004';
+$VERSION = '0.005';
 
 =head1 NAME
 
@@ -36,6 +36,15 @@ Win32::IE::Mechanize - Like "the mech" but with IE as user-agent
         button    => $btn_name,
     );
 
+Now also trys to support Basic-Authentication like LWP::UserAgent
+
+    use Win32::IE::Mechanize;
+
+    my $ie = Win32::IE::Mechanize->new( visible => 1 );
+
+    $ie->credentials( 'pause.perl.org:443', 'PAUSE', 'abeltje', '********' );
+    $ie->get( 'https://pause.perl.org/pause/authenquery' );
+ 
 =head1 DESCRIPTION
 
 This module tries to be a sort of drop-in replacement for
@@ -181,7 +190,19 @@ Close the InternetExplorer instance.
 
 =cut
 
-sub close { $_[0]->{agent}->quit; }
+sub close { $_[0]->{agent}->quit; $_[0]->{agent} = undef; }
+
+sub open {
+    my $self = shift;
+    defined $self->{agent} and return;
+    $self->{agent} = Win32::OLE->new( 'InternetExplorer.Application' );
+    foreach my $prop ( keys %{ $self->{_opt} } ) {
+        defined $self->{_opt}{ $prop } and
+            $self->{agent}->{ $prop } = $self->{_opt}{ $prop };
+    }
+}
+
+sub agent { $_[0]->{agent} }
 
 =head1 Page-fetching methods
 
@@ -193,11 +214,14 @@ Navigate to the C<$url> and wait for it to be loaded.
 
 sub get {
     my $self = shift;
+    my $agent = $self->{agent};
     my( $url ) = @_;
-
-    $url = (URI->new_abs( $url, $self->uri ))->as_string
-        if $self->uri; # && $url !~ m!^(?:https?|ftp)://!;
-    $self->{agent}->navigate( $url );
+     
+    my $uri = $self->uri 
+        ? URI->new_abs( $url, $self->uri->as_string )
+        : URI->new( $url );
+    $agent->navigate({ URL     => $uri->as_string,
+                       Headers => $self->_extra_headers( $uri ) });
     $self->_wait_while_busy;
 }
 
@@ -506,11 +530,11 @@ sub success { $_[0]->{agent}->ReadyState >= 2 }
 
 =head2 $ie->uri
 
-Return the URI of this document.
+Return the URI of this document (as an URI object).
 
 =cut
 
-sub uri { $_[0]->{agent}->LocationURL }
+sub uri { URI->new( $_[0]->{agent}->LocationURL ) }
 
 =head2 $ie->ct
 
@@ -781,7 +805,84 @@ sub load_frame {
     $self->get( $self->find_frame( $frame ) );
 }
 
+=head1 LWP compatability methods
+
+=head2 $ie->credentials( $netloc, $realm, $uid, $pass )
+
+Set the user name and password to be used for a realm.
+
+C<$netloc> looks like C<hostname:port>.
+
+=cut
+
+sub credentials {
+    my($self, $netloc, $realm, $uid, $pass) = @_;
+    $self->{basic_authentication}{ $netloc }{ $realm } = [ $uid, $pass ];
+    $self->{basic_authentication}{ $netloc }{__active_realm__} = $realm;
+}
+
+=head2 $ie->get_basic_credentials( $realm, $uri )
+
+This is called by C<_extra_headers> to retrieve credentials for documents
+protected by Basic Authentication.  The arguments passed in
+are the C<$realm> and the C<$uri> requested.
+
+The method should return a username and password.  It should return an
+empty list to abort the authentication resolution attempt.
+
+The base implementation simply checks a set of pre-stored member
+variables, set up with the credentials() method.
+
+=cut
+
+sub get_basic_credentials {
+    my($self, $realm, $uri ) = @_;
+
+    my $host_port = $uri->can( 'host_port' )
+        ? $uri->host_port : $uri->as_string;
+
+    $realm ||= $self->{basic_authentication}{ $host_port }{__active_realm__};
+    $realm or return ( );
+
+    if ( exists $self->{basic_authentication}{ $host_port }{ $realm } ) {
+        return @{ $self->{basic_authentication}{ $host_port }{ $realm } };
+    }
+
+    return ( );
+}
+
+=head2 $ie->set_realm( $netloc, $realm );
+
+Sets the authentication realm to C<$realm> for C<$netloc>. An empty value
+unsets the realm for C<$netloc>.
+
+C<$netloc> looks like C<hostname:port>.
+
+As I have not found a way to access response-headers, I cannot find
+out the authentication realm (if any) and automagically set the right
+headers. You will have to do some bookkeeping for now.
+
+=cut
+
+sub set_realm {
+    my( $self, $netloc, $realm ) = @_;
+    $netloc or return;
+    defined $realm or $realm = "";
+    $self->{basic_authentication}{ $netloc }{__active_realm__} = $realm;
+}
+
 =head1 Internal-only methods
+
+=head2 DESTROY
+
+We need to close the IE-instance, at least when not visible!
+
+=cut
+
+sub DESTROY {
+    my $agent = shift->{agent};
+    $agent && !$agent->{visible} and $agent->quit;
+}
 
 =head2 $ie->_extract_forms()
 
@@ -846,10 +947,16 @@ sub _wait_while_busy {
     my $self = shift;
     my $agent = $self->{agent};
 
+    # The documentation isn't clear on this.
+    # The DocumentComplete event roughly says:
+    # the event gets fired (for each frame) after ReadyState == 4
+    # we might need to check if the first one has frames
+    # and do some more checking.
     my $sleep = 0; # 0.4;
     while ( $agent->{Busy} == 1 ) { $sleep and sleep( $sleep ) }
     return unless $agent->{ReadyState};
     while ( $agent->{ReadyState} != 4 ) { $sleep and sleep( $sleep ) }
+
     $self->{ $_ } = undef for qw( forms cur_form links );
     return $self->success;
 }
@@ -870,6 +977,27 @@ sub warn {
     } else {
         &Carp::carp;
     }
+}
+
+=head2 $self->_extra_headers( )
+
+For the moment we only support B<basic authentication>.
+
+=cut
+
+sub _extra_headers {
+    my( $self, $uri ) = @_;
+
+    my $host_port = $uri->can( 'host_port' )
+        ? $uri->host_port : $uri->as_string;
+    return "" unless exists $self->{basic_authentication}{ $host_port };
+
+    my $realm = $self->{basic_authentication}{ $host_port }{__active_realm__};
+    my( $user, $pass ) = $self->get_basic_credentials( $realm, $uri );
+
+    my $header = defined $user ? __authorization_basic( $user, $pass ) : "";
+
+    return $header;
 }
 
 =head1 Internal only non-methods
@@ -933,19 +1061,33 @@ sub __setup_matchfunc {
     }
 }
 
+=head2 __authorization_basic( $user, $pass )
+
+Return a HTTP "Authorization: Basic xxx" header.
+
+=cut
+
+sub __authorization_basic {
+    my( $user, $pass ) = @_;
+    defined $user && defined $pass or return;
+
+    require MIME::Base64;
+    return "Authorization: Basic " .
+           MIME::Base64::encode_base64( "$user:$pass" ) .
+           "\015\012";
+}
+
 1;
 
 package Win32::IE::Form;
 
-=head1 PACKAGE
+=head1 PACKAGE Win32::IE::Form
 
 Win32::IE::Form - Like <HTML::Form> but for the IE form object.
 
 =head1 METHODS
 
-=over 4
-
-=item Win32::IE::Form->new( $form_obj );
+=head2 Win32::IE::Form->new( $form_obj );
 
 Initialize a new object, it is only a ref to a scalar, the rest is
 done through the methods.
@@ -953,13 +1095,12 @@ done through the methods.
 =cut
 
 sub new {
-    my $proto = shift;
-    my $class = ref $proto ? ref $proto : $proto;
+    my $class = shift;
     
     bless \(my $self = shift), $class;
 }
 
-=item $form->method( [$new_method] )
+=head2 $form->method( [$new_method] )
 
 Get/Set the I<method> used to submit the from (i.e. B<GET> or
 B<POST>).
@@ -974,7 +1115,7 @@ sub method {
     return $form->{method};
 }
 
-=item $form->action( [$new_action] )
+=head2 $form->action( [$new_action] )
 
 Get/Set the I<action> for submitting the form.
 
@@ -988,7 +1129,7 @@ sub action {
     return $form->{action};
 }
 
-=item $form->enctype( [$new_enctype] )
+=head2 $form->enctype( [$new_enctype] )
 
 Get/Set the I<enctype> of the form.
 
@@ -1002,7 +1143,7 @@ sub enctype {
     return $form->{enctype};
 }
 
-=item $form->attr( $name[, $new_value] )
+=head2 $form->attr( $name[, $new_value] )
 
 Get/Set any of the attributes from the FORM-tag.
 
@@ -1028,7 +1169,7 @@ sub attr {
     }
 }
 
-=item $form->name()
+=head2 $form->name()
 
 Return the name of this form.
 
@@ -1041,7 +1182,7 @@ sub name {
     return $form->{name}
 }
 
-=item $form->inputs()
+=head2 $form->inputs()
 
 Returns a list of L<Win32::IE::Input> objects. In scalar context it
 will return the number of inputs.
@@ -1061,7 +1202,7 @@ sub inputs {
     return wantarray ? @inputs : scalar @inputs;
 }
 
-=item $form->find_input( $name[, $type[, $index]] )
+=head2 $form->find_input( $name[, $type[, $index]] )
 
 See L<HTML::Form::find_input>
 
@@ -1081,7 +1222,7 @@ sub find_input {
     return wantarray ? @inputs : $inputs[0];
 }
 
-=item $form->value( $name[, $new_value] )
+=head2 $form->value( $name[, $new_value] )
 
 Get/Set the value for the input-contol with spcified name.
 
@@ -1095,7 +1236,7 @@ sub value {
     return $input->value( @_ );
 }
 
-=item $form->submit()
+=head2 $form->submit()
 
 Submit this form.
 
@@ -1108,34 +1249,27 @@ sub submit {
     $form->submit;
 }
 
-=back
-
-=cut
-
 package Win32::IE::Input;
 
-=head1 PACKAGE
+=head1 PACKAGE Win32::IE::Input
 
 Win32::IE::Input - A small class to interface with the IE input objects.
 
 =head1 METHODS
 
-=over 4
-
-=item Win32::IE::Input->new( $ie_input )
+=head2 Win32::IE::Input->new( $ie_input )
 
 Initialize a new object (like L<Win32::IE::Form>).
 
 =cut
 
 sub new {
-    my $proto = shift;
-    my $class = ref $proto ? ref $proto : $proto;
+    my $class = shift;
 
     bless \(my $self = shift), $class;
 }
 
-=item $input->name
+=head2 $input->name
 
 Return the input-control name.
 
@@ -1143,7 +1277,7 @@ Return the input-control name.
 
 sub name { return ${ $_[0] }->name; }
 
-=item $input->type
+=head2 $input->type
 
 Return the type of the input control.
 
@@ -1151,7 +1285,7 @@ Return the type of the input control.
 
 sub type { return ${ $_[0] }->type; }
 
-=item $input->value( [$value] )
+=head2 $input->value( [$value] )
 
 Get/Set the value of the input control.
 
@@ -1165,21 +1299,17 @@ sub value {
     return $input->{value};
 }
 
-=back
+package Win32::IE::Link;
 
-=head1 PACKAGE
+=head1 PACKAGE Win32::IE::Link
 
 Win32::IE::Link - A bit like WWW::Mechanize::Link
 
 =cut
 
-package Win32::IE::Link;
-
 =head1 METHODS
 
-=over 4
-
-=item Win32::IE::Link->new( $element )
+=head2 Win32::IE::Link->new( $element )
 
 C<$element> is Win32::OLE object with a C<tagName()> of B<IFRAME>,
 B<FRAME>, <AREA> or <A>.
@@ -1191,11 +1321,16 @@ implementation.
 =cut
 
 sub new {
-    my $proto = shift;
-    my $class = ref $proto ? ref $proto : $proto;
+    my $class = shift;
 
     bless \( my $self = shift ), $class;
 }
+
+=head2 $link->url
+
+Returns the url from the link.
+
+=cut
 
 sub url {
     my $self = ${ $_[0] };
@@ -1207,23 +1342,39 @@ sub url {
     }
 }
 
-sub name {
-    my $self = ${ $_[0] };
-    return scalar( grep lc( $_ ) eq 'name' => keys %$self )
-        ? defined $self->{name} ? $self->{name} : '' : '';
-}
+=head2 $link->text
 
-sub tag {
-    my $self = ${ $_[0] };
-    return $self->{tagName};
-}
+Text of the link.
+
+=cut
 
 sub text {
     my $self = ${ $_[0] };
     return defined $self->{innerHTML} ? $self->innerHTML : '';
 }
 
-=back
+=head2 $link->name
+
+NAME attribute from the source tag, if any.
+
+=cut
+
+sub name {
+    my $self = ${ $_[0] };
+    return scalar( grep lc( $_ ) eq 'name' => keys %$self )
+        ? defined $self->{name} ? $self->{name} : '' : '';
+}
+
+=head2 $link->tag
+
+Tag name (either "A", "FRAME" or "IFRAME").
+
+=cut
+
+sub tag {
+    my $self = ${ $_[0] };
+    return $self->{tagName};
+}
 
 =head1 COPYRIGHT
 
