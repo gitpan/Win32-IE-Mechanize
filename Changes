@@ -1,5 +1,5 @@
 These changes are from the Subversion repository at
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
 
 The filelists have a short symbolic indicator:
         !  modified
@@ -10,22 +10,117 @@ The filelists have a short symbolic indicator:
 
 Enjoy!
 ___________________________________________________________________________
+[   375] By: abeltje                          on 2005-08-07 19:56:50 +0200
+        Log: * [AUTOCOMMIT] Win32::IE::Mechanize 0.009
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/Changes
+___________________________________________________________________________
+[   374] By: abeltje                          on 2005-08-07 19:35:51 +0200
+        Log: * Prepare for a new release (0.009)
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/README,
+	     /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   372] By: abeltje                          on 2005-08-07 18:16:25 +0200
+        Log: * [FIX]
+	       * fix the uri tests to pass on cygwin
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/t/02ct.t, /Win32-IE-Mechanize/t/basic.t,
+	     /Win32-IE-Mechanize/t/image-parse.t,
+	     /Win32-IE-Mechanize/t/jstest.t
+___________________________________________________________________________
+[   371] By: abeltje                          on 2005-08-07 17:43:58 +0200
+        Log: * [CHANGE]
+	       * do not assign undef to ->{checked} properties (XP doesn't
+		 like it)
+	       + add _ct_from_registry() to try to find a "real" mimeType
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Input.pm,
+	     /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   370] By: abeltje                          on 2005-08-07 17:39:24 +0200
+        Log: * [FIX]
+	       * the return-url test wasn't quite right
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/t/tick.t
+___________________________________________________________________________
+[   369] By: abeltje                          on 2005-08-07 17:37:50 +0200
+        Log: * [FIX]
+	       * make the return values of the Mech compatibility routine
+		 consistent
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/t/find_link.t
+___________________________________________________________________________
+[   368] By: abeltje                          on 2005-08-07 17:35:48 +0200
+        Log: * [CHANGE]
+	       + add the original mimeType to the testdescription
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/t/02ct.t
+___________________________________________________________________________
+[   365] By: abeltje                          on 2005-08-07 12:13:11 +0200
+        Log: * [CHANGE]
+	       * change content-type detection (still guesswork)
+	       * prepare for snapshot
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   364] By: abeltje                          on 2005-08-07 12:09:12 +0200
+        Log: * [CHANGE]
+	       - remove the dependency on Win32 it is core
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/Makefile.PL
+___________________________________________________________________________
+[   363] By: abeltje                          on 2005-08-07 12:00:06 +0200
+        Log: * [CHANGE]
+	       * Remove META.yml; the newer MakeMaker does this in blib/
+		 (hooray)
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           - /Win32-IE-Mechanize/META.yml
+           ! /Win32-IE-Mechanize/MANIFEST
+___________________________________________________________________________
+[   361] By: abeltje                          on 2005-08-07 09:07:08 +0200
+        Log: * [ADD]
+	       + add new method Win32::IE::Link::click()
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/t/click_link.html,
+	     /Win32-IE-Mechanize/t/click_link.t
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Link.pm
+___________________________________________________________________________
+[   360] By: abeltje                          on 2005-08-06 17:48:58 +0200
+        Log: * [CHANGE]
+	       + use Time::HiRes::sleep() for waiting if available
+		 (suggested by Bart Lateur)
+	       * make $SLEEP and $READYSTATE accessable from the outside
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   242] By: abeltje                          on 2005-01-09 22:59:58 +0100
+        Log: * [CHANGE]
+	       * update the manifest for Win32::IE::Mechanize-0.008
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/MANIFEST
+___________________________________________________________________________
+[   239] By: abeltje                          on 2005-01-09 22:07:22 +0100
+        Log: * Update Changes for Win32::IE::Mechanize-0.008
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/Changes
+___________________________________________________________________________
 [   238] By: abeltje                          on 2005-01-09 22:05:34 +0100
         Log: * Prepare fro Win32::IE::Mechanize-0.008
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   237] By: abeltje                          on 2005-01-09 22:03:17 +0100
         Log: * [CHANGE]
 	       * fix the calls to prove
 	       * add /C(over) option
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/mkdist.cmd
 ___________________________________________________________________________
 [   236] By: abeltje                          on 2005-01-09 20:29:28 +0100
         Log: * [CHANGE]
 	       * added tests, to get some more coverage
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/t/bluedot.png,
 	     /Win32-IE-Mechanize/t/greendot.jpg,
 	     /Win32-IE-Mechanize/t/reddot.gif
@@ -41,19 +136,19 @@ ___________________________________________________________________________
 	       * values() returns *all* values in list context
 	       * some minor stuff
 	       * added known bug to the BUGS POD-section
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   234] By: abeltje                          on 2005-01-09 20:09:55 +0100
         Log: * [CHANGE]
 	       * Finish the POD
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Image.pm
 ___________________________________________________________________________
 [   233] By: abeltje                          on 2005-01-08 12:01:44 +0100
         Log: * [CHANGE]
 	       + Add more tests
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/t/01construct.t,
 	     /Win32-IE-Mechanize/t/02ct.t, /Win32-IE-Mechanize/t/basic.txt
            ! /Win32-IE-Mechanize/t/00props.t,
@@ -64,7 +159,7 @@ ___________________________________________________________________________
 [   232] By: abeltje                          on 2005-01-08 11:45:31 +0100
         Log: * [CHANGE]
 	       * Add ->ct eq 'text/plain'
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   230] By: abeltje                          on 2005-01-04 15:56:08 +0100
@@ -73,7 +168,7 @@ ___________________________________________________________________________
 	       * some little POD changes to Win32::IE::Image
 	       * factor out Win32::IE::Form
 	       * factor out Win32::IE::Input
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/lib/Win32/IE/Form.pm,
 	     /Win32-IE-Mechanize/lib/Win32/IE/Input.pm
            ! /Win32-IE-Mechanize/lib/Win32/IE/Image.pm,
@@ -83,26 +178,26 @@ ___________________________________________________________________________
         Log: * [CHANGE]
 	       * add a diag() message with the Win32::IE::Mechanize
 		 version
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/t/00props.t
 ___________________________________________________________________________
 [   225] By: abeltje                          on 2005-01-03 23:44:23 +0100
         Log: * Prepare for the 0.007_4 snapshot
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/Changes
 ___________________________________________________________________________
 [   224] By: abeltje                          on 2005-01-03 23:37:27 +0100
         Log: * [CHANGE]
 	       * Change the TODO test to skip with some conditions, seems
 		 better...
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/t/00props.t
 ___________________________________________________________________________
 [   223] By: abeltje                          on 2005-01-03 23:30:25 +0100
         Log: * [CHANGE]
 	       * Factor out Win32::IE::Link and Win32::IE::Image
 	       * Add tests for the Image interface
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/lib/Win32/IE/Image.pm,
 	     /Win32-IE-Mechanize/lib/Win32/IE/Link.pm,
 	     /Win32-IE-Mechanize/t/image-parse.html,
@@ -112,41 +207,41 @@ ___________________________________________________________________________
 [   222] By: abeltje                          on 2004-12-30 01:00:09 +0100
         Log: * [CHANGE]
 	       * don't kill README in the ppd-making process
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/mkdist.cmd
 ___________________________________________________________________________
 [   221] By: abeltje                          on 2004-12-30 00:39:05 +0100
         Log: * [FIX]
 	       * fixed some pod
 	       * added som pod
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   220] By: abeltje                          on 2004-12-29 23:27:04 +0100
         Log: * [CHANGE]
 	       * make th visibility-test TODO
 	       * help URL testing (on cygwin)
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/t/00props.t,
 	     /Win32-IE-Mechanize/t/basic.t, /Win32-IE-Mechanize/t/jstest.t
 ___________________________________________________________________________
 [   219] By: abeltje                          on 2004-12-29 22:39:52 +0100
         Log: * [CHANGE]
 	       * last bit of cleanup and syncing with WWW::Mechanize-1.08
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   218] By: abeltje                          on 2004-12-29 22:36:19 +0100
         Log: * [ADD]
 	       * added some more basic tests
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/t/basic.html,
 	     /Win32-IE-Mechanize/t/basic.t
 ___________________________________________________________________________
 [   217] By: abeltje                          on 2004-12-29 22:22:38 +0100
         Log: * [ADD]
 	       * new tests for some properties
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/t/00props.t
            ! /Win32-IE-Mechanize/MANIFEST
 ___________________________________________________________________________
@@ -155,7 +250,7 @@ ___________________________________________________________________________
 	       * added the testfiles to MANIFEST
 	       * updated the dependencies in Makefile.PL
 	       * updated information in README (mention cygwin)
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/MANIFEST,
 	     /Win32-IE-Mechanize/Makefile.PL, /Win32-IE-Mechanize/README
 ___________________________________________________________________________
@@ -167,7 +262,7 @@ ___________________________________________________________________________
 		 (copied)
 	       * started the reorganization of the sourcecode (same order
 		 as W::M)
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   214] By: abeltje                          on 2004-12-29 19:32:42 +0100
@@ -176,7 +271,7 @@ ___________________________________________________________________________
 	       * added tests for frames-pages
 	       * added support for the tests to be run on cygwin
 	       * standardized the $ENV{WIM_VISIBLE} interface
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/t/frames.html,
 	     /Win32-IE-Mechanize/t/frames.t,
 	     /Win32-IE-Mechanize/t/select.html,
@@ -194,24 +289,24 @@ ___________________________________________________________________________
 	       * fix typo in subcall (by dcimafonte [at] yahoo.it)
 	       * fiddling with _wait_while_busy()
 	       * start syncing with WWW::Mechanize-1.08
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   200] By: abeltje                          on 2004-05-31 18:24:50 +0200
         Log: * [CHANGE]
 	       + Added an extra test for find_link()
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/t/find_link.t
 ___________________________________________________________________________
 [   198] By: abeltje                          on 2004-04-24 22:54:41 +0200
         Log: * Prepare for v0.006 release
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/Changes
 ___________________________________________________________________________
 [   197] By: abeltje                          on 2004-04-24 22:52:26 +0200
         Log: * [CHANGE]
 	       * Update the versions
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/README
 ___________________________________________________________________________
 [   196] By: abeltje                          on 2004-04-24 22:47:11 +0200
@@ -222,7 +317,7 @@ ___________________________________________________________________________
 		 + add_header()
 		 * fix issues with radio-groups
 		 * fix issues with select-mutiple
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   195] By: abeltje                          on 2004-04-24 22:19:55 +0200
@@ -230,7 +325,7 @@ ___________________________________________________________________________
 	       * tweaked the field.t test
 	       * added more tests to the swaplist.t thing
 	       * tweaked the jstest.t
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/t/field.html,
 	     /Win32-IE-Mechanize/t/field.t,
 	     /Win32-IE-Mechanize/t/jstest.t,
@@ -240,7 +335,7 @@ ___________________________________________________________________________
 [   194] By: abeltje                          on 2004-04-24 13:48:30 +0200
         Log: * [ADD]
 	       + new testfile for field() and set_visible()
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/t/field.html,
 	     /Win32-IE-Mechanize/t/field.t
 ___________________________________________________________________________
@@ -248,14 +343,14 @@ ___________________________________________________________________________
         Log: * [ADD]
 	       + start or the testfile
 	       * modify the JavaScript example
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/t/swaplist.t
            ! /Win32-IE-Mechanize/t/swaplist.html
 ___________________________________________________________________________
 [   192] By: abeltje                          on 2004-04-23 02:51:56 +0200
         Log: * [ADD]
 	       + new html/javascript testcase
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/t/swaplist.html
 ___________________________________________________________________________
 [   169] By: abeltje                          on 2004-04-13 18:34:50 +0200
@@ -263,43 +358,43 @@ ___________________________________________________________________________
 	       [   168] Log: * [CHANGE]^M
 			    * Fix $0 -> %0^M
 			    * Set the Rev keyword on the file
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/mkdist.cmd
 ___________________________________________________________________________
 [   167] By: abeltje                          on 2004-04-13 18:25:49 +0200
         Log: * [MERGE] (From CPAN-PPMify)
 	       + Add a small README file to the ZIPDIST
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/mkdist.cmd
 ___________________________________________________________________________
 [   158] By: abeltje                          on 2004-04-12 19:25:32 +0200
         Log: * [CHANGE]
 	       * META.yml is regenerated with make dist
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            - /Win32-IE-Mechanize/META.yml
 ___________________________________________________________________________
 [   157] By: abeltje                          on 2004-04-12 19:24:17 +0200
         Log: * [CHANGE]
 	       * META.yml is regenerated with make dist
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/META.yml
 ___________________________________________________________________________
 [   143] By: abeltje                          on 2004-04-12 12:20:56 +0200
         Log: * [CHANGE]
 	       * update version number
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/README
 ___________________________________________________________________________
 [   142] By: abeltje                          on 2004-04-12 12:20:23 +0200
         Log: * [FIX]
 	       * URI::file cannot 'host_port()'
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   141] By: abeltje                          on 2004-04-12 11:37:19 +0200
         Log: * [ADD]
 	       + Added this Changes file
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/Changes
            ! /Win32-IE-Mechanize/MANIFEST, /Win32-IE-Mechanize/META.yml
 ___________________________________________________________________________
@@ -307,64 +402,64 @@ ___________________________________________________________________________
         Log: * [CHANGE]
 	       * Mostly POD changes for the supporting packages
 	       + Added some missing methods to better handle the useragent
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   139] By: abeltje                          on 2004-04-09 16:07:58 +0200
         Log: * [FIX] (Thanks to Hirosi Taguti)
 	       * __authentication_basic() wasn't a method, that is why it
 		 didn't work!
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   138] By: abeltje                          on 2004-04-08 13:29:04 +0200
         Log: * [ADD]
 	       + Try and set additional headers for Basic Authentication,
 		 see if that works?
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   125] By: abeltje                          on 2004-04-02 14:13:10 +0200
         Log: * [ADD]
 	       + META.yml
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/META.yml
            ! /Win32-IE-Mechanize/MANIFEST
 ___________________________________________________________________________
 [   124] By: abeltje                          on 2004-03-28 19:05:17 +0200
         Log: * [ADD]
 	       * forgot to add the new jstest files
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/MANIFEST
 ___________________________________________________________________________
 [   123] By: abeltje                          on 2004-03-28 18:13:33 +0200
         Log: * [ADD]
 	       + Forgot the README (#122)
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/MANIFEST
 ___________________________________________________________________________
 [   122] By: abeltje                          on 2004-03-28 18:11:26 +0200
         Log: * [ADD]
 	       + README for the distribution
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/README
 ___________________________________________________________________________
 [   121] By: abeltje                          on 2004-03-28 17:33:47 +0200
         Log: * [FIX]
 	       * thinko in the new __prop_value() sub
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   120] By: abeltje                          on 2004-03-28 17:02:29 +0200
         Log: * [CHANGE]
 	       * Quiet down the new "form not found" warnings
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/t/formbasics.t
 ___________________________________________________________________________
 [   119] By: abeltje                          on 2004-03-28 16:57:56 +0200
         Log: * [FIX]
 	       * pre-req should be PREREQ_PM
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/Makefile.PL
 ___________________________________________________________________________
 [   118] By: abeltje                          on 2004-03-28 16:52:04 +0200
@@ -372,20 +467,20 @@ ___________________________________________________________________________
 	       * Complete overhaul. Itegrated most of the WWW::Mechanize
 		 documentation and ordered everything along the same way.
 		 (Thank you Andy Lester!)
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [   117] By: abeltje                          on 2004-03-27 16:54:39 +0100
         Log: * [CHANGE]
 	       * remove stuff that shouldn't be in the distro
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/MANIFEST, /Win32-IE-Mechanize/Makefile.PL
 ___________________________________________________________________________
 [   116] By: abeltje                          on 2004-03-27 16:49:15 +0100
         Log: * [ADD]
 	       + new test to show the added value of using a JavaScript
 		 enabled UserAgent
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/t/jstest.html,
 	     /Win32-IE-Mechanize/t/jstest.t,
 	     /Win32-IE-Mechanize/t/jstestok.html
@@ -393,69 +488,69 @@ ___________________________________________________________________________
 [    85] By: abeltje                          on 2003-12-01 17:17:54 +0100
         Log: * [CHANGE]
 	       * No https on the internal INHOLLAND network
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/bbcheck.pl
 ___________________________________________________________________________
 [    84] By: abeltje                          on 2003-12-01 14:29:39 +0100
         Log: * [FIX]
 	       * Make it install nicer
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/Makefile.PL
 ___________________________________________________________________________
 [    83] By: abeltje                          on 2003-12-01 14:11:27 +0100
         Log: * [CHANGE]
 	       * clean-up and reformat some of the documentation
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [    81] By: abeltje                          on 2003-12-01 11:04:11 +0100
         Log: * [FIX]
 	       + implement the new user-interface of Win32::IE::Mechanize
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/bbcheck.pl
 ___________________________________________________________________________
 [    80] By: abeltje                          on 2003-12-01 11:01:52 +0100
         Log: * [FIX]
 	       + make url's to get() absolute against the current uri()
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [    79] By: abeltje                          on 2003-12-01 10:49:53 +0100
         Log: * [ADD]
 	       + simple test for the submit_form() method
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/t/formbasics.t
 ___________________________________________________________________________
 [    78] By: abeltje                          on 2003-12-01 10:49:08 +0100
         Log: * [ADD]
 	       + support for the submit_form() method
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [    77] By: abeltje                          on 2003-11-30 23:40:11 +0100
         Log: * [FIX] follow_link()
 	       * find_link() returns an object, so call the url() method
 		 on it when you get() the new uri
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [    75] By: abeltje                          on 2003-11-30 22:52:56 +0100
         Log: * [FIX]
 	       * different reactions on different perls (or IE)
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [    74] By: abeltje                          on 2003-11-30 22:51:05 +0100
         Log: * [FIX]
 	       * change the html-file name (revision 73)
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/MANIFEST
 ___________________________________________________________________________
 [    73] By: abeltje                          on 2003-11-30 22:48:25 +0100
         Log: * [CHANGE]
 	       * General cleanup of the testfiles
 	       + introduce $ENV{WIM_VISIBLE}
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            - /Win32-IE-Mechanize/t/basics.html
            ! /Win32-IE-Mechanize/t/basic.t,
 	     /Win32-IE-Mechanize/t/find_link.html,
@@ -468,13 +563,13 @@ ___________________________________________________________________________
 [    71] By: abeltje                          on 2003-11-30 22:07:58 +0100
         Log: * [ADD]
 	       + few more tests
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/t/formbasics.t
 ___________________________________________________________________________
 [    70] By: abeltje                          on 2003-11-30 21:48:47 +0100
         Log: * [ADD]
 	       + more testfiles to the MANIFEST
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/MANIFEST, /Win32-IE-Mechanize/t/basic.t,
 	     /Win32-IE-Mechanize/t/find_link.t,
 	     /Win32-IE-Mechanize/t/formbasics.t,
@@ -483,7 +578,7 @@ ___________________________________________________________________________
 [    69] By: abeltje                          on 2003-11-30 21:45:47 +0100
         Log: * [CHANGE]
 	       + Adjust for the new interfaces of Win32::IE::Mechanize
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/bbcheck.pl
 ___________________________________________________________________________
 [    68] By: abeltje                          on 2003-11-30 21:07:10 +0100
@@ -491,32 +586,32 @@ ___________________________________________________________________________
 	       + A port of the WWW::Mechanize::Link interface
 	       + most of form-handling things
 	       + A port of the tick() and untick() functions
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [    67] By: abeltje                          on 2003-11-30 21:00:42 +0100
         Log: * [ADD]
 	       + A port of the link tests from WWW::Mechanize
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/t/find_link.html,
 	     /Win32-IE-Mechanize/t/find_link.t
 ___________________________________________________________________________
 [    66] By: abeltje                          on 2003-11-30 18:12:23 +0100
         Log: * [ADD]
 	       + A port of the tick tests from WWW::Mechanize
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/t/tick.html, /Win32-IE-Mechanize/t/tick.t
 ___________________________________________________________________________
 [    65] By: abeltje                          on 2003-11-24 02:25:04 +0100
         Log: * [CHANGE]
 	       * Help persistant cookies, en doe een explicite "logout"
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/bbcheck.pl
 ___________________________________________________________________________
 [    62] By: abeltje                          on 2003-11-18 16:59:30 +0100
         Log: * [CHANGE]
 	       * make it better connected with the data take-in site
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/bbcheck.pl,
 	     /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm,
 	     /Win32-IE-Mechanize/t/formbasics.html,
@@ -525,7 +620,7 @@ ___________________________________________________________________________
 [    61] By: abeltje                          on 2003-11-16 17:48:49 +0100
         Log: * [ADD]
 	       + new tests for the forms interface (needs more!)
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/t/formbasics.html,
 	     /Win32-IE-Mechanize/t/formbasics.t
            ! /Win32-IE-Mechanize/t/basic.t
@@ -535,38 +630,38 @@ ___________________________________________________________________________
 	       + a new interface to the IE Form object (Win32::IE::Form)
 	       + a new interface to the IE Element object
 		 (Win32::IE::Input)
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [    59] By: abeltje                          on 2003-11-16 13:04:47 +0100
         Log: * [ADD]
 	       + more testing
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/t/basic.t,
 	     /Win32-IE-Mechanize/t/basics.html
 ___________________________________________________________________________
 [    58] By: abeltje                          on 2003-11-16 13:02:28 +0100
         Log: * [ADD]
 	       + more 'mech' methods added
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [    57] By: abeltje                          on 2003-11-15 15:29:02 +0100
         Log: * [ADD]
 	       + add some more methods (like mech/LWP)
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
 ___________________________________________________________________________
 [    56] By: abeltje                          on 2003-11-15 12:27:53 +0100
         Log: * [ADD]
 	       + Start adding some test stuff
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/t, /Win32-IE-Mechanize/t/basic.t,
 	     /Win32-IE-Mechanize/t/basics.html
 ___________________________________________________________________________
 [    55] By: abeltje                          on 2003-11-13 23:00:47 +0100
         Log: * Initial import
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize/MANIFEST,
 	     /Win32-IE-Mechanize/Makefile.PL,
 	     /Win32-IE-Mechanize/bbcheck.pl, /Win32-IE-Mechanize/lib,
@@ -577,7 +672,7 @@ ___________________________________________________________________________
 [    54] By: abeltje                          on 2003-11-13 22:52:10 +0100
         Log: * [ADD]
 	       + Een nieuwe branch voor Win32::IE::Mechanize
-        Url: http://source.test-smoke.org/repos/tools/Win32-IE-Mechanize
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
            + /Win32-IE-Mechanize
 
 -- Generated by 'svnchanges' (0.013) --

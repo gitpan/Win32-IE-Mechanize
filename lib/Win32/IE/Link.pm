@@ -2,9 +2,9 @@ package Win32::IE::Link;
 use strict;
 use warnings;
 
-# $Id: Link.pm 223 2005-01-03 22:30:25Z abeltje $
+# $Id: Link.pm 241 2005-08-07 07:07:08Z abeltje $
 use vars qw( $VERSION );
-$VERSION = '0.002';
+$VERSION = '0.003';
 
 =head1 NAME Win32::IE::Link
 
@@ -103,6 +103,17 @@ Tag name (either "A", "AREA", "FRAME" or "IFRAME").
 sub tag {
     my $self = ${ $_[0] };
     return $self->{tagName};
+}
+
+=head2 $link->click
+
+The IE link object supports its own click() method, so make it available.
+
+=cut
+
+sub click {
+    my $self = ${ $_[0] };
+    $self->fireEvent( 'onclick' );
 }
 
 1;

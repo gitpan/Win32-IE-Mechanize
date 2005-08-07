@@ -5,7 +5,7 @@ use Cwd;        # These help the cygwin tests
 require Win32;
 my $base = Win32::GetCwd();
 
-# $Id: basic.t 233 2005-01-09 19:29:28Z abeltje $
+# $Id: basic.t 372 2005-08-07 16:16:25Z abeltje $
 
 use Test::More;
 
@@ -31,10 +31,10 @@ is $ie->ct, "text/html", "->ct method";
 like $ie->content, qr|<p>Simple paragraph</p>|i, "Content";
 
 ok $ie->follow_link( text => 'formbasics' ), "follow_link()";
-(my $f_uri = $url ) =~ s|://([a-z]):|:///\U$1:|i;
+(my $f_uri = $url ) =~ s|:///?([a-z]):|:///\U$1:|i;
 is $ie->uri, $f_uri, "new uri $f_uri";
 ok $ie->back, "back()";
-(my $o_uri = $uri ) =~ s|://([a-z]):|:///\U$1:|i;
+(my $o_uri = $uri ) =~ s|:///?([a-z]):|:///\U$1:|i;
 is $ie->uri, $o_uri, "back at $o_uri";
 
 my $link = $ie->find_link( text => 'formbasics' );

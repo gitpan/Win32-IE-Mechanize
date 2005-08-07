@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 use strict;
 
-# $Id: Makefile.PL 216 2004-12-29 18:51:24Z abeltje $
+# $Id: Makefile.PL 241 2005-08-07 10:09:12Z abeltje $
 
 use ExtUtils::MakeMaker;
 
@@ -14,7 +14,7 @@ WriteMakefile(
     ABSTRACT_FROM => 'lib/Win32/IE/Mechanize.pm',
     ) : (),
 
-    PREREQ_PM     => { 'Win32' => 0, 'Win32::OLE' => 0, 'URI' => 0 },
+    PREREQ_PM     => { 'Win32::OLE' => 0, 'URI' => 0 },
     dist          => { COMPRESS => "gzip -9f",
                        SUFFIX   => ".gz",
                      },

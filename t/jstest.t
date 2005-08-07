@@ -5,7 +5,7 @@ use Cwd;        # These help the cygwin tests
 require Win32;
 my $base = Win32::GetCwd();
 
-# $Id: jstest.t 220 2004-12-29 22:27:04Z abeltje $
+# $Id: jstest.t 372 2005-08-07 16:16:25Z abeltje $
 
 use Test::More;
 
@@ -25,7 +25,7 @@ $ie->get( $uri );
 is $ie->title, 'JS Redirection Success', "Right title()";
 
 # is this a IE glitch?
-$new_uri =~ s|^file://([a-z]):|file:///\U$1:|i;
+$new_uri =~ s|^file:///?([a-z]):|file:///\U$1:|i;
 # This Windows, case-insensitive
 is $ie->uri, $new_uri, "Got the new uri()";
 

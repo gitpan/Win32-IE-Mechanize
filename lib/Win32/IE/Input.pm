@@ -2,9 +2,9 @@ package Win32::IE::Input;
 use strict;
 use warnings;
 
-# $Id: Input.pm 231 2005-01-04 14:56:08Z abeltje $
+# $Id: Input.pm 366 2005-08-07 15:43:58Z abeltje $
 use vars qw( $VERSION );
-$VERSION = '0.002';
+$VERSION = '0.003';
 
 =head1 NAME
 
@@ -143,7 +143,7 @@ sub radio_value {
 
     if ( @_ ) {
         my $value = shift;
-        $_->{checked} = $_->value eq $value for @radios;
+        $_->{checked} = ($_->value eq $value)||0 for @radios;
     }
     my( $value ) = map $_->{value} => grep $_->checked => @radios;
     return $value;

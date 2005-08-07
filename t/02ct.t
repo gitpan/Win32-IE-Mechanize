@@ -5,7 +5,7 @@ use Cwd;        # These help the cygwin tests
 require Win32;
 my $base = Win32::GetCwd();
 
-# $Id: 02ct.t 233 2005-01-09 19:29:28Z abeltje $
+# $Id: 02ct.t 372 2005-08-07 16:16:25Z abeltje $
 
 use Test::More;
 
@@ -26,21 +26,25 @@ isa_ok my $ie = Win32::IE::Mechanize->new( visible => $ENV{WIM_VISIBLE} ),
 isa_ok $ie->agent, "Win32::OLE";
 
 ok $ie->get( $uri ), "get($uri)";
+my $doc = $ie->{agent}->Document;
 is $ie->title, "Test Page", "->title method";
-is $ie->ct, "text/html", "->ct method";
+is $ie->ct, "text/html", "->ct method ($doc->{mimeType})";
 
 ok $ie->follow_link( text => 'Basic text' ), "Follow textlink";
-is $ie->ct, 'text/plain', "Plain text";
+$doc = $ie->{agent}->Document;
+is $ie->ct, 'text/plain', "Plain text ($doc->{mimeType})";
 
 ok $ie->reload, "reload()";
-is $ie->ct, 'text/plain', "same content-type";
+$doc = $ie->{agent}->Document;
+is $ie->ct, 'text/plain', "same content-type ($doc->{mimeType})";
 
 $ie->quiet( 1 );
 ok ! $ie->follow_link( n => 'all' );
+$doc = $ie->{agent}->Document;
 
-( my $ouri = $uri ) =~ s|://([A-Z]):|:///\U$1:|i;
+( my $ouri = $uri ) =~ s|:///?([A-Z]):|:///\U$1:|i;
 ok $ie->back, "back()";
-is $ie->ct, 'text/html', "text/html";
+is $ie->ct, 'text/html', "text/html ($doc->{mimeType})";
 is $ie->uri, $ouri, "back to $ouri";
 
 {
@@ -48,6 +52,7 @@ is $ie->uri, $ouri, "back to $ouri";
         ok $ie->get( $img ), "get( $img )";
         my $ctype = $img =~ /\.(\w+)$/ ? $1 : 'unknown';
         $ctype =~ s/jpg/jpeg/;
-        is $ie->ct, "image/$ctype", "ct() eq $ctype";
+        $doc = $ie->{agent}->Document;
+        is $ie->ct, "image/$ctype", "ct() eq $ctype ($doc->{mimeType})";
     }
 }

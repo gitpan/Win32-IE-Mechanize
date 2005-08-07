@@ -1,9 +1,9 @@
 package Win32::IE::Mechanize;
 use strict;
 
-# $Id: Mechanize.pm 239 2005-01-09 21:05:34Z abeltje $
-use vars qw( $VERSION );
-$VERSION = '0.008';
+# $Id: Mechanize.pm 372 2005-08-07 17:35:51Z abeltje $
+use vars qw( $VERSION $SLEEP $READYSTATE );
+$VERSION = '0.009';
 
 =head1 NAME
 
@@ -72,6 +72,13 @@ for B<InternetExplorer.Application+msdn>.
 
 use URI;
 use Win32::OLE;
+
+# This was suggested by Bart Lateur
+BEGIN {
+    eval "use Time::HiRes qw/sleep/";
+    $@ or $SLEEP = 0.055;
+}
+$READYSTATE = 2;
 
 # These are properties of InternetExplorer.Application we support
 my %ie_property = (
@@ -286,12 +293,58 @@ sub ct {
     my $ct = $_[0]->{agent}->Document->mimeType;
     CASE: {
         local $_ = $ct;
-        /^HTML (?:Document|File)/i and return "text/html";
-        /^Text (?:Document|File)/i and return "text/plain";
-        /^(\w+) Image/i   and return "image/\L$1";
+        /^HTML/i              and return "text/html";
+        /^Text/i              and return "text/plain";
+        /^(\w+) Image/i       and return "image/\L$1";
+        /^(?:jpe?g|gif|png)/i and return "image/\L$1";
 
-        return $_;
+        return _ct_from_registry( $_ );
     }
+}
+
+=begin private
+
+=head2 _ct_from_registry( $iemime )
+
+This is a bit af a pain:
+
+=over 4
+
+=item * Find a key like C<qr/.+?file/> in HKEY_CLASSES_ROOT with value
+$iemime (put it in @fts)
+
+=item * Find a key like C<qr/\..+/> in HKEY_CLASSES_ROOT with value
+$ft and a subkey I<Content Type>, that value can be used as Content Type.
+
+=back
+
+=end private
+
+=cut
+
+sub _ct_from_registry {
+    my $iemime = shift;
+
+    eval q{require Win32::TieRegisrty};
+    $@ and return $iemime;
+
+    Win32::TieRegistry->import( Delimiter => '/' );
+    my $Registry = $Win32::TieRegistry::Registry;
+    my @filetypes = grep m|^(.+?file/)$| &&
+                         ($Registry->{ "Classes/$1/" }||'') eq $iemime
+        => keys %{ $Registry->{'Classes/'} };
+
+    my $mimeType = $iemime;
+    for my $ft ( @filetypes ) {
+        ( my $ftclean = $ft ) =~ s|/$||;
+        my @exts = grep m|^(\..+?/)$| &&
+                        ($Registry->{ "Classes/$1/" }||'') eq $ftclean &&
+    		    $Registry->{ "Classes/${1}Content Type" }
+            => keys %{$Registry->{'Classes/'}};
+    
+        @exts and $mimeType = $Registry->{ "Classes/$exts[0]Content Type" };
+    }
+    return $mimeType;
 }
 
 =head2 $ie->current_form
@@ -1009,7 +1062,7 @@ sub tick {
 
     foreach my $check_box ( @check_boxes ) {
         next unless $check_box->value eq $value;
-        ${$check_box}->{checked} = $set;
+        ${$check_box}->{checked} = $set || 0;
     }
     return 1;
 }
@@ -1517,11 +1570,11 @@ sub _wait_while_busy {
     # the event gets fired (for each frame) after ReadyState == 4
     # we might need to check if the first one has frames
     # and do some more checking.
-    my $sleep = 0; # 0.4;
-#    while ( $agent->{Busy} == 1 ) { $sleep and sleep( $sleep ) }
+
+#    while ( $agent->{Busy} == 1 ) { $SLEEP and sleep( $SLEEP ) }
 #    return unless $agent->{ReadyState};
-    while ( $agent->{ReadyState} <= 2 ) {
-        $sleep and sleep( $sleep );
+    while ( $agent->{ReadyState} <= $READYSTATE ) {
+        $SLEEP and sleep( $SLEEP );
     }
 
     $self->{ $_ } = undef for qw( forms cur_form links images );

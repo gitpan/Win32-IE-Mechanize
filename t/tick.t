@@ -5,11 +5,11 @@ use Cwd;        # These help the cygwin tests
 require Win32;
 my $base = Win32::GetCwd();
 
-# $Id: tick.t 216 2004-12-29 18:32:42Z abeltje $
+# $Id: tick.t 366 2005-08-07 15:39:24Z abeltje $
 
 use Test::More;
 plan $^O =~ /MSWin32|cygwin/ 
-    ? (tests => 6) : (skip_all => "This is not MSWin32!");
+    ? (tests => 8) : (skip_all => "This is not MSWin32!");
 
 use_ok( 'Win32::IE::Mechanize' );
 
@@ -31,8 +31,10 @@ $ie->tick("foo","hello");
 $ie->tick("foo","bye");
 $ie->untick("foo","hello");
 
-$ie->click( 'submit' );
+$ie->click( 'submit' ); $ie->_wait_while_busy;
 
-is $ie->uri, "$prev_uri?foo=bye&submit=Submit", "(un)tick actions";
+like $ie->uri, qr/[&?]foo=bye\b/, "(un)tick actions [foo=bye]";
+like $ie->uri, qr/[&?]submit=Submit\b/, "(un)tick actions [submit=Submit]";
+unlike $ie->uri, qr/[&?]foo=hello\b/, "(un)tick actions ![foo=hello]";
 
 $ENV{WIM_VISIBLE} or $ie->close;

@@ -6,7 +6,7 @@ require Win32;
 my $base = Win32::GetCwd();
 
 
-# $Id: find_link.t 216 2004-12-29 18:32:42Z abeltje $
+# $Id: find_link.t 366 2005-08-07 15:37:50Z abeltje $
 
 use Test::More;
 
@@ -18,7 +18,8 @@ use_ok( 'Win32::IE::Mechanize' );
 sub as_WML($) {
     my $link = shift;
     return [ (undef) x 4 ] unless $link;
-    return [ $link->url, $link->text, $link->name, lc $link->tag ];
+    return [ $link->url||undef, $link->text||undef,
+             $link->name||undef, (lc $link->tag)||undef ];
 }
 
 local $^O = 'MSWin32';

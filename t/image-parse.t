@@ -5,7 +5,7 @@ use Cwd;        # These help the cygwin tests
 require Win32;
 my $base = Win32::GetCwd();
 
-# $Id: image-parse.t 233 2005-01-09 19:29:28Z abeltje $
+# $Id: image-parse.t 372 2005-08-07 16:16:25Z abeltje $
 
 use Test::More;
 
@@ -34,13 +34,13 @@ is scalar @images, 2, "Only two images";
 
 my $first = $images[0];
 is lc $first->tag, "img", "img tag";
-(my $juri = $url1 ) =~ s|://([a-z]):|:///\U$1:|i;
+(my $juri = $url1 ) =~ s|:///?([a-z]):|:///\U$1:|i;
 is $first->url, $juri, "src=$juri";
 is $first->alt, "The world of the wango", "alt=The world of the wango";
 
 my $second = $images[1];
 is lc $second->tag, "input", "input tag";
-(my $guri = $url2 ) =~ s|://([a-z]):|:///\U$1:|i;
+(my $guri = $url2 ) =~ s|:///?([a-z]):|:///\U$1:|i;
 is $second->url, $guri, "src=$guri";
 is $second->alt, '', "alt";
 is $second->height, 142, "height";
