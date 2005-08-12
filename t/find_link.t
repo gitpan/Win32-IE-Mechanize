@@ -5,15 +5,15 @@ use Cwd;        # These help the cygwin tests
 require Win32;
 my $base = Win32::GetCwd();
 
-
-# $Id: find_link.t 366 2005-08-07 15:37:50Z abeltje $
+# $Id: find_link.t 381 2005-08-12 01:34:10Z abeltje $
 
 use Test::More;
 
 plan $^O =~ /MSWin32|cygwin/i 
     ? (tests => 60) : (skip_all => "This is not MSWin32!");
 
-use_ok( 'Win32::IE::Mechanize' );
+use_ok 'Win32::IE::Mechanize';
+$Win32::IE::Mechanize::DEBUG = $Win32::IE::Mechanize::DEBUG = $ENV{WIM_DEBUG};
 
 sub as_WML($) {
     my $link = shift;

@@ -2,9 +2,9 @@ package Win32::IE::Form;
 use strict;
 use warnings;
 
-# $Id: Form.pm 231 2005-01-04 14:56:08Z abeltje $
+# $Id: Form.pm 381 2005-08-12 10:10:09Z abeltje $
 use vars qw( $VERSION );
-$VERSION = '0.002';
+$VERSION = '0.004';
 
 =head1 NAME
 
@@ -145,9 +145,12 @@ sub inputs {
     my $form = $$self;
 
     my $ok_tags = join "|", qw( BUTTON INPUT SELECT TEXTAREA );
-    my( @inputs, %radio_seen ) ;
+    my( @inputs, %radio_seen );
+    $form->all->length or return;
     for ( my $i = 0; $i < $form->all->length; $i++ ) {
-        next unless $form->all( $i )->tagName =~ /$ok_tags/i;
+        next unless $form->all( $i ) &&
+                    $form->all( $i )->tagName =~ /$ok_tags/i;
+
         if ( lc( $form->all( $i )->tagName ) eq 'input' &&
              lc( $form->all( $i )->type    ) eq 'radio' ) {
 

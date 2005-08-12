@@ -5,7 +5,7 @@ use Cwd;        # These help the cygwin tests
 require Win32;
 my $base = Win32::GetCwd();
 
-# $Id: basic.t 372 2005-08-07 16:16:25Z abeltje $
+# $Id: basic.t 381 2005-08-12 01:34:10Z abeltje $
 
 use Test::More;
 
@@ -13,13 +13,16 @@ plan $^O =~ /MSWin32|cygwin/i
     ? (tests => 12) : (skip_all => "This is not MSWin32!");
 
 use_ok 'Win32::IE::Mechanize';
+$Win32::IE::Mechanize::DEBUG = $Win32::IE::Mechanize::DEBUG = $ENV{WIM_DEBUG};
 
 local $^O = 'MSWin32';
 my $uri = URI::file->new_abs( "$base/t/basic.html" )->as_string;
 my $url = URI::file->new_abs( "$base/t/formbasics.html" )->as_string;
 
-isa_ok my $ie = Win32::IE::Mechanize->new( visible => $ENV{WIM_VISIBLE} ),
-       "Win32::IE::Mechanize";
+isa_ok my $ie = Win32::IE::Mechanize->new(
+    visible => $ENV{WIM_VISIBLE},
+    readystate => 2,
+), "Win32::IE::Mechanize";
 isa_ok $ie->agent, "Win32::OLE";
 
 ok $ie->get( $uri ), "get($uri)";

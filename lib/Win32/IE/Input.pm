@@ -2,7 +2,7 @@ package Win32::IE::Input;
 use strict;
 use warnings;
 
-# $Id: Input.pm 366 2005-08-07 15:43:58Z abeltje $
+# $Id: Input.pm 372 2005-08-07 15:43:58Z abeltje $
 use vars qw( $VERSION );
 $VERSION = '0.003';
 

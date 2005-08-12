@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 use strict;
 
-# $Id: Makefile.PL 241 2005-08-07 10:09:12Z abeltje $
+# $Id: Makefile.PL 381 2005-08-12 10:15:14Z abeltje $
 
 use ExtUtils::MakeMaker;
 
@@ -20,3 +20,13 @@ WriteMakefile(
                      },
 );
 
+use Win32;
+my( undef, $maj, $min ) = Win32::GetOSVersion();
+my( $os ) = Win32::GetOSName();
+if ( $os =~ /^Win/ && $maj == 5 && $min > 0 ) {
+    warn <<__NOTE__;
+NOTE: On $os you will need to enable active local content to run the test-suite.
+\tTools>Internet Options>Advanced>Security
+\tTick the box: Allow active content to run in files on My Computer
+__NOTE__
+}

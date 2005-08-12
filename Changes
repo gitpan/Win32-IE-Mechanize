@@ -10,6 +10,112 @@ The filelists have a short symbolic indicator:
 
 Enjoy!
 ___________________________________________________________________________
+[   392] By: abeltje                          on 2005-08-12 19:24:26 +0200
+        Log: * [CHANGE]
+	       * code cleanup
+	       * Fix _ct_from_registry() (hooray for Devel::Cover)
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   391] By: abeltje                          on 2005-08-12 19:18:35 +0200
+        Log: * [CHANGE]
+	       * adjust some tests for better code-coverage (Devel::Cover)
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/t/01construct.t,
+	     /Win32-IE-Mechanize/t/02ct.t,
+	     /Win32-IE-Mechanize/t/basic.html
+___________________________________________________________________________
+[   389] By: abeltje                          on 2005-08-12 13:01:22 +0200
+        Log: * [FIX]
+	       * The new pod_coverage test showed undocumented methods
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   388] By: abeltje                          on 2005-08-12 12:59:27 +0200
+        Log: * [ADD]
+	       + check the POD coverage of the modules
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/private/pod_coverage.t
+___________________________________________________________________________
+[   387] By: abeltje                          on 2005-08-12 12:29:51 +0200
+        Log: * [ADD]
+	       + A script to display a slow site
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/examples/test-smoke-org.pl
+___________________________________________________________________________
+[   386] By: abeltje                          on 2005-08-12 12:15:14 +0200
+        Log: * [CHANGE]
+	       * Warn WinXP+ users about active content in files on My
+		 Computer
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/Makefile.PL, /Win32-IE-Mechanize/README
+___________________________________________________________________________
+[   385] By: abeltje                          on 2005-08-12 12:10:09 +0200
+        Log: * [CHANGE]
+	       * be more defensive with the all() collection in forms
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Form.pm
+___________________________________________________________________________
+[   384] By: abeltje                          on 2005-08-12 03:36:11 +0200
+        Log: * [ADD]
+	       + Start a collection of examples
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/examples,
+	     /Win32-IE-Mechanize/examples/weather.pl
+___________________________________________________________________________
+[   383] By: abeltje                          on 2005-08-12 03:34:10 +0200
+        Log: * [CHANGE]
+	       * fix the test-suite so it passes on both Windoes and
+		 Cygwin with the $ie->new _wai_while_busy()
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/t/00props.t,
+	     /Win32-IE-Mechanize/t/01construct.t,
+	     /Win32-IE-Mechanize/t/02ct.t, /Win32-IE-Mechanize/t/basic.t,
+	     /Win32-IE-Mechanize/t/click_link.t,
+	     /Win32-IE-Mechanize/t/field.t,
+	     /Win32-IE-Mechanize/t/find_link.t,
+	     /Win32-IE-Mechanize/t/formbasics.t,
+	     /Win32-IE-Mechanize/t/frames.t,
+	     /Win32-IE-Mechanize/t/image-parse.t,
+	     /Win32-IE-Mechanize/t/jstest.t,
+	     /Win32-IE-Mechanize/t/select.t,
+	     /Win32-IE-Mechanize/t/swaplist.t,
+	     /Win32-IE-Mechanize/t/tick.t
+___________________________________________________________________________
+[   382] By: abeltje                          on 2005-08-12 03:31:23 +0200
+        Log: * [CHANGE]
+	       * redesign Win32::IE::Mechanize::_wait_while_busy() to hook
+		 into the browser events
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   381] By: abeltje                          on 2005-08-11 09:42:41 +0200
+        Log: * [CHANGE]
+		 * whitespace, tick keyword for submit_form(), OLE events
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   380] By: abeltje                          on 2005-08-11 09:21:11 +0200
+        Log: * more robust coding around the all() collection
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Form.pm
+___________________________________________________________________________
+[   379] By: abeltje                          on 2005-08-11 07:33:47 +0200
+        Log: * [CHANGE]
+	       * Fiddle with the tests (not finished)
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/t/00props.t,
+	     /Win32-IE-Mechanize/t/01construct.t,
+	     /Win32-IE-Mechanize/t/02ct.t, /Win32-IE-Mechanize/t/basic.t,
+	     /Win32-IE-Mechanize/t/click_link.t,
+	     /Win32-IE-Mechanize/t/swaplist.t,
+	     /Win32-IE-Mechanize/t/tick.t
+___________________________________________________________________________
+[   377] By: abeltje                          on 2005-08-07 20:14:39 +0200
+        Log: * [AUTOCOMMIT] Win32::IE::Mechanize 0.009
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/Changes
+___________________________________________________________________________
 [   375] By: abeltje                          on 2005-08-07 19:56:50 +0200
         Log: * [AUTOCOMMIT] Win32::IE::Mechanize 0.009
         Url: http://yola/repos/tools/Win32-IE-Mechanize

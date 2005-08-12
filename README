@@ -24,9 +24,15 @@ This module requires these other modules and libraries:
     Win32
     Win32::OLE
 
+NOTE TO Windows XP/2003 USERS
+
+You will need to enable active local content to run the test-suite.
+    Tools>Internet Options>Advanced>Security
+    Tick the box: Allow active content to run in files on My Computer
+
 COPYRIGHT AND LICENCE
 
-Copyright MMIV Abe Timmerman <abeltje@cpan.org> All rights reserved.
+Copyright MMIV-MMV Abe Timmerman <abeltje@cpan.org> All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

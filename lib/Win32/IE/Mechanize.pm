@@ -1,9 +1,9 @@
 package Win32::IE::Mechanize;
 use strict;
 
-# $Id: Mechanize.pm 372 2005-08-07 17:35:51Z abeltje $
-use vars qw( $VERSION $SLEEP $READYSTATE );
-$VERSION = '0.009';
+# $Id: Mechanize.pm 389 2005-08-12 17:24:26Z abeltje $
+use vars qw( $VERSION $SLEEP $DEBUG );
+$VERSION = '0.009_15';
 
 =head1 NAME
 
@@ -22,7 +22,7 @@ Win32::IE::Mechanize - Like "the mech" but with IE as user-agent
     $ie->form_name( $form_name );
     $ie->set_fields(
         username => 'yourname',
-        password => 'dummy' 
+        password => 'dummy'
     );
     $ie->click( $btn_name );
 
@@ -33,10 +33,15 @@ Win32::IE::Mechanize - Like "the mech" but with IE as user-agent
             username => 'yourname',
             password => 'dummy',
         },
+        # tick the bar value and untick the baz value
+        # of the foo checkboxes
+        tick      => {
+            foo => { bar => 1, baz => 0 },
+        },
         button    => $btn_name,
     );
 
-Now also trys to support Basic-Authentication like LWP::UserAgent
+Now also tries to support Basic-Authentication like LWP::UserAgent
 
     use Win32::IE::Mechanize;
 
@@ -44,7 +49,7 @@ Now also trys to support Basic-Authentication like LWP::UserAgent
 
     $ie->credentials( 'pause.perl.org:443', 'PAUSE', 'abeltje', '********' );
     $ie->get( 'https://pause.perl.org/pause/authenquery' );
- 
+
 =head1 DESCRIPTION
 
 This module tries to be a sort of drop-in replacement for
@@ -71,14 +76,12 @@ for B<InternetExplorer.Application+msdn>.
 =cut
 
 use URI;
-use Win32::OLE;
+use Win32::OLE qw( EVENTS );
 
-# This was suggested by Bart Lateur
 BEGIN {
-    eval "use Time::HiRes qw/sleep/";
-    $@ or $SLEEP = 0.055;
+    $DEBUG = 0;
+    Win32::OLE->Option( '_Unique' );
 }
-$READYSTATE = 2;
 
 # These are properties of InternetExplorer.Application we support
 my %ie_property = (
@@ -108,10 +111,12 @@ sub new {
     my $class = shift;
 
     my $self = bless {
-        _opt    => {},
-        quiet   => 0,
-        onwarn  => \&Win32::IE::Mechanize::__warn,
-        onerror => \&Win32::IE::Mechanize::__die,
+        _opt       => {},
+        quiet      => 0,
+        readystate => 3,
+        olewarn    => 0,
+        onwarn     => \&Win32::IE::Mechanize::__warn,
+        onerror    => \&Win32::IE::Mechanize::__die,
     }, $class;
 
     my %opt = @_ ? UNIVERSAL::isa( $_[0], 'HASH' ) ? %{ $_[0] } : @_ : ();
@@ -123,6 +128,10 @@ sub new {
     $self->{ $_ } = exists $opt{ $_ } ? $opt{ $_ } : undef
         for qw( quiet onwarn onerror );
 
+    exists $opt{ $_ } and  $self->{ $_ } = $opt{ $_ }
+        for qw( readystate olewarn );
+
+    Win32::OLE->Option( Warn => $self->{olewarn} );
     $self->open;
 }
 
@@ -186,8 +195,13 @@ sub set_property {
 
     foreach my $prop ( keys %opt ) {
         defined $opt{ $prop } and
-            $self->{agent}->{ $prop } = $opt{ $prop };
+            $self->{agent}->{ $prop } = $self->{_opt}{ $prop } = $opt{ $prop };
     }
+    if ( $raw{elowarn} ) {
+        $self->{olewarn} = $raw{olewarn};
+        Win32::OLE->Option( Warn => $self->{olewarn} );
+    }
+    return scalar @{[ keys( %opt ), grep /^olewarn$/ => keys %raw ]}
 }
 
 =head2 $ie->close
@@ -198,15 +212,26 @@ Close the InternetExplorer instance.
 
 sub close { $_[0]->{agent}->quit; $_[0]->{agent} = undef; }
 
+=head2 $ie->open()
+
+Create a I<InternetExplorer.Application> OLE object, set all its
+properties and enable the I<DWebBrowserEvents2> event-handle.
+
+=cut
+
 sub open {
     my $self = shift;
     defined $self->{agent} and return;
     $self->{agent} = Win32::OLE->new( 'InternetExplorer.Application' ) or
         $self->die( "Cannot create an InternetExplorer.Application" );
+
     foreach my $prop ( keys %{ $self->{_opt} } ) {
         defined $self->{_opt}{ $prop } and
             $self->{agent}->{ $prop } = $self->{_opt}{ $prop };
     }
+
+    Win32::OLE->WithEvents( $self->{agent}, \&win32_ie_events,
+                            "DWebBrowserEvents2" );
     return $self;
 }
 
@@ -229,9 +254,9 @@ wait for it to be loaded.
 
 sub get {
     my $self = shift;
-    my $agent = $self->{agent};
+    my $agent = $self->agent;
     my( $url ) = @_;
-     
+
     my $uri = $self->uri 
         ? URI->new_abs( $url, $self->uri->as_string )
         : URI->new( $url );
@@ -248,7 +273,7 @@ loaded.
 =cut
 
 sub reload {
-     $_[0]->{agent}->Refresh;
+     $_[0]->agent->Refresh;
      $_[0]->_wait_while_busy;
 }
 
@@ -260,7 +285,7 @@ loaded.
 =cut
 
 sub back {
-    $_[0]->{agent}->GoBack;
+    $_[0]->agent->GoBack;
     $_[0]->_wait_while_busy;
 }
 
@@ -272,7 +297,7 @@ Return true for ReadyState >= 2;
 
 =cut
 
-sub success { $_[0]->{agent}->ReadyState >= 2 }
+sub success { $_[0]->agent->ReadyState >= $_[0]->{readystate} }
 
 =head2 $ie->uri
 
@@ -280,7 +305,7 @@ Return the URI of this document (as an URI object).
 
 =cut
 
-sub uri { URI->new( $_[0]->{agent}->LocationURL ) }
+sub uri { URI->new( $_[0]->agent->LocationURL ) }
 
 =head2 $ie->ct
 
@@ -289,8 +314,8 @@ return the MIME type in a way we expect.
 
 =cut
 
-sub ct { 
-    my $ct = $_[0]->{agent}->Document->mimeType;
+sub ct {
+    my $ct = $_[0]->agent->Document->mimeType;
     CASE: {
         local $_ = $ct;
         /^HTML/i              and return "text/html";
@@ -325,24 +350,29 @@ $ft and a subkey I<Content Type>, that value can be used as Content Type.
 sub _ct_from_registry {
     my $iemime = shift;
 
-    eval q{require Win32::TieRegisrty};
-    $@ and return $iemime;
+    eval q{use Win32::TieRegistry};
+    $@ and warn( "registry module: $@" ), return $iemime;
 
-    Win32::TieRegistry->import( Delimiter => '/' );
-    my $Registry = $Win32::TieRegistry::Registry;
+    $Win32::TieRegistry::Registry->Delimiter( '/' );
+    my $Classes = $Win32::TieRegistry::Registry->{ qq[Classes/] };
+
     my @filetypes = grep m|^(.+?file/)$| &&
-                         ($Registry->{ "Classes/$1/" }||'') eq $iemime
-        => keys %{ $Registry->{'Classes/'} };
+                         ($Classes->{ qq[$1/] }||'') eq $iemime
+        => keys %$Classes;
 
     my $mimeType = $iemime;
     for my $ft ( @filetypes ) {
         ( my $ftclean = $ft ) =~ s|/$||;
         my @exts = grep m|^(\..+?/)$| &&
-                        ($Registry->{ "Classes/$1/" }||'') eq $ftclean &&
-    		    $Registry->{ "Classes/${1}Content Type" }
-            => keys %{$Registry->{'Classes/'}};
-    
-        @exts and $mimeType = $Registry->{ "Classes/$exts[0]Content Type" };
+                        ($Classes->{ qq[$1/] }||'') eq $ftclean &&
+    		    $Classes->{ qq[${1}Content Type] }
+            => keys %$Classes;
+        for my $ext ( @exts ) {
+            ( my $extclean = $ext ) =~s|^\.(.+?)/$|$1|;
+            $iemime =~ m|\b$extclean\b|i and
+		return $Classes->{ qq[${ext}Content Type] };
+        }
+        @exts and $mimeType = $Classes->{ qq[$exts[0]Content Type] };
     }
     return $mimeType;
 }
@@ -376,7 +406,7 @@ Fetch the C<title> from the C<< $ie->Document >>.
 
 =cut
 
-sub title { $_[0]->{agent}->Document->title }
+sub title { $_[0]->agent->Document->title }
 
 =head1 CONTENT-HANDLING METHODS
 
@@ -390,7 +420,7 @@ and beware all tags are upcased :(
 
 =cut
 
-sub content { $_[0]->{agent}->Document->documentElement->{outerHTML} }
+sub content { $_[0]->agent->Document->documentElement->{outerHTML} }
 
 =head1 LINK METHODS
 
@@ -678,9 +708,9 @@ key/value pairs:
 
 =item * C<< alt => 'string' >> and C<< alt_regex => qr/regex/, >>
 
-C<alt> matches the ALT attribute of the image against I<string>, which must be a
-n
-exact match. To select a image with an ALT tag that is exactly "download", use
+C<alt> matches the ALT attribute of the image against I<string>, which
+must be an exact match. To select a image with an ALT tag that is
+exactly "download", use
 
     $ie->find_image( alt  => "download" );
 
@@ -714,7 +744,7 @@ The tags supported are C<< <img> >> and C<< <input> >>.
 
 =back
 
-If C<n> is not specified, it defaults to 1.  Therefore, if you don't
+If C<n> is not specified, it defaults to 1.  Therefore, if you do not
 specify any parms, this method defaults to finding the first image on the
 page.
 
@@ -860,7 +890,7 @@ found.
 
 sub form_name {
     my $self = shift;
-    
+
     my $name = shift or return undef;
     $self->_extract_forms unless defined $self->{forms};
     my @matches = grep $_->name && $_->name eq $name => @{ $self->{forms} };
@@ -936,7 +966,7 @@ sub select {
 This method sets multiple fields of a form. It takes a list of field
 name and value pairs. If there is more than one field with the same
 name, the first one found is set. If you want to select which of the
-duplicate field to set, use a value which is an anonymous array which
+duplicate fields to set, use a value which is an anonymous array which
 has the field value and its number as the 2 elements.
 
         # set the second foo field
@@ -957,7 +987,7 @@ sub set_fields {
     my %opt = @_ ? UNIVERSAL::isa( $_[0], 'HASH' ) ? %{ $_[0] } : @_ : ();
     while ( my( $fname, $value ) = each %opt ) {
         if ( ref $value eq 'ARRAY' ) {
-            my( $input ) = $form->find_input( $fname, undef, $value->[1] );
+            my( $input ) = $form->find_input( $fname, undef, $value->[1]||1 );
             if ( $input ) {
                 $input->value( $value->[0] );
             } else {
@@ -968,7 +998,7 @@ sub set_fields {
             if ( $input ) {
                 $input->value( $value );
             } else {
-                sssself->warn( "No inputcontrol by the name '$fname'" );
+                $self->warn( "No inputcontrol by the name '$fname'" );
             }
         }
     }
@@ -1111,7 +1141,7 @@ sub value {
     }
 }
 
-=head2 $ie->click( $button )
+=head2 $ie->click( $button[, $nowait] )
 
 Call the click method on an INPUT object with the name C<$button> Has
 the effect of clicking a button on a form.  The first argument is the
@@ -1121,7 +1151,7 @@ name of the button to be clicked. I have not found a way to set the
 =cut
 
 sub click {
-    my( $self, $button ) = @_;
+    my( $self, $button, $nowait ) = @_;
 
     my $form = $self->current_form;
     
@@ -1132,7 +1162,7 @@ sub click {
       $form->find_input( $button, 'submit' );
 
     $toclick and $toclick->click;
-    $self->_wait_while_busy;
+    $self->_wait_while_busy( $nowait );
 }
 
 =head2 $ie->click_button( %args )
@@ -1161,6 +1191,11 @@ B<NOTE>: Unlike WWW::Mechanize, Win32::IE::Mechanize takes
 all buttonish types of C<< <INPUT type=> >> into accout: B<button>,
 B<image> and B<submit>.
 
+B<NOTE>: Because buttons can be purely scripted in IE, you may need to
+specify an extra argument C<< nowait => 1 >>. This tels
+Win32::IE::Mechanize not to hook into the eventloop in order to
+prevent "hanging".
+
 =cut
 
 sub click_button {
@@ -1168,7 +1203,7 @@ sub click_button {
     my %args = @_;
 
     for ( keys %args ) {
-        if ( !/^(number|name|value)$/ ) {
+        if ( !/^(number|name|value|nowait)$/ ) {
             $self->warn( qq{Unknown click_button_form parameter "$_"} );
         }
     }
@@ -1183,16 +1218,16 @@ sub click_button {
     @buttons or return;
     if ( $args{name} ) {
         $buttons[0]->click;
-        return $self->_wait_while_busy;
+        return $self->_wait_while_busy( $args{nowait} );
     } elsif ( $args{number} ) {
-        @buttons <= $args{number} and return
-        $buttons[ $args{number} - 1 ]->click();
-        return $self->_wait_while_busy;
+        @buttons <= $args{number} and
+            return $buttons[ $args{number} - 1 ]->click();
+        return $self->_wait_while_busy( $args{nowait} );
     } elsif ( $args{value} ) {
         for my $button ( @buttons ) {
             if ( $button->value eq $args{value} ) {
                 $button->click();
-                return $self->_wait_while_busy;
+                return $self->_wait_while_busy( $args{nowait} );
             }
         }
     }
@@ -1242,6 +1277,15 @@ Selects the form named I<name> (calls C<L<form_name()>>)
 
 Sets the field values from the I<fields> hashref (calls C<L<set_fields()>>)
 
+=item * tick => checkboxes
+
+Ticks and unticks the values specified for each checkboxgroup in the
+hashref I<checkboxes>.
+
+    tick => { foo => { bar => 1, baz => 0 } }
+
+This option is not in WWW::Mechanize.
+
 =item * button => button
 
 Clicks on button I<button> (calls C<L<click()>>)
@@ -1276,8 +1320,18 @@ sub submit_form {
     if ( my $fields = $opt{fields} ) {
         if ( ref $fields eq 'HASH' ) {
             $self->set_fields( %{$fields} ) ;
-        } # TODO: What if it's not a hash?  We just ignore it silently?
+        } # TODO: What if it is not a hash?  We just ignore it silently?
     }
+
+    if ( my $chkbox = $opt{tick} ) {
+        if ( ref $chkbox eq 'HASH' ) {
+            for my $cbname ( keys %$chkbox ) {
+                while ( my( $value, $set ) = each %{ $chkbox->{ $cbname } } ) {
+                    $self->tick( $cbname, $value, $set );
+                }
+            }
+        }
+    } # TODO: what if it is not a hash? We just ignore it silently?
 
     if ( $opt{button} ) {
         if ( ref $opt{button} ) {
@@ -1326,7 +1380,7 @@ sub add_header {
 
 =head2 $ie->delete_header( name [, name ... ] )
 
-Removes HTTP headers from the agent's list of special headers.
+Removes HTTP headers from the agents list of special headers.
 
 B<NOTE>: This might not work like it does with C<WWW::Mechanize>
 
@@ -1362,19 +1416,21 @@ sub quiet {
 
 =head2 $ie->find_frame( $frame_name )
 
-Returns the URL to the source of the frame with C<name eq $frame_name>
+Returns the URL to the source of the frame with C<name eq $frame_name>.
+
+B<NOTE>This method is depricate. Please use C<find_link()>!
 
 =cut
 
 sub find_frame {
     my( $self, $frame ) = @_;
 
-    my $agent = $self->{agent};
+    my $agent = $self->agent;
     my $doc = $agent->Document;
     for ( my $i = 0; $i < $doc->all->length; $i++ ) {
         my $obj = $doc->all( $i );
         next unless $obj && $obj->tagName &&
-                    $obj->tagName eq 'FRAME' &&
+                    $obj->tagName =~ /^I?FRAME$/ &&
                     $obj->name    eq $frame;
 
         return ( URI->new_abs( $obj->src, $doc->URL ) )->as_string;
@@ -1384,6 +1440,8 @@ sub find_frame {
 =head2 $ie->load_frame( $frame_name )
 
 C<< $self->get( $self->find_frame( $frame_name )) >>
+
+B<NOTE>This method is depricated. Please use C<follow_link()>!
 
 =cut
 
@@ -1468,7 +1526,7 @@ We need to close the IE-instance, at least when not visible!
 =cut
 
 sub DESTROY {
-    my $agent = shift->{agent};
+    my $agent = $_[0]->{agent};
     $agent && !$agent->{visible} and $agent->quit;
 }
 
@@ -1482,7 +1540,7 @@ that mimics L<HTML::Form>.
 
 sub _extract_forms {
     my $self = shift;
-    my $doc = $self->{agent}->Document;
+    my $doc = $self->agent->Document;
 
     my @forms;
     for ( my $i = 0; $i < $doc->forms->length; $i++ ) {
@@ -1513,7 +1571,7 @@ The links come from the following:
 
 sub _extract_links {
     my $self = shift;
-    my $doc = $self->{agent}->Document;
+    my $doc = $self->agent->Document;
 
     my @links;
     for ( my $i = 0; $i < $doc->all->length; $i++ ) {
@@ -1554,27 +1612,86 @@ sub _extract_images {
     return wantarray ? @{ $self->{forms} } : $self->{forms};
 }
 
-=head2 $self->_wait_while_busy()
+{
 
-This is still a mess, but we need to poll IE to see if it is ready
-loading and displaying the page, before we can move on.
+=begin internals
+
+=head1 IEXPLORER READYSTATE
+
+InternetExplorer is a visual browser with scripting capabilities. This
+introduces the problem that content can still be rendered even while
+the actual resource has finished loading. InternetExplorer.Application
+does itself not have a good idea when it is "done", so we have to take
+a guess.
+
+To take a stab at it, we hook into the B<DWebBrowserEvents2> interface
+and keep track of the I<DownloadBegin>/I<DownloadComplete>
+event-pairs. At the end of a loading cycle the I<DocumentComplete>
+event is fired (ReadyState == 4). After that, as it turns out, some
+more events are fired and it looks like the InternetExplorer
+automation object initialisation (including the visible rendering) is
+finished. This seems to end with the I<ProgressChange> event with two
+zero parameters being fired. We take this event to be the signal that
+things are "ready". This is pure speculation and not documented; so it
+might be wrong.
+
+=head2 init_win32_ie_events()
+
+Sets the counters needed to keep track of the I<Download*> events.
+
+=head2 win32_ie_events()
+
+This is the handler used by L<Win32::OLE> to hook into the
+B<DWebBrowserEvents2> interface.
+
+=end internals
+
+=cut
+
+our( $dl_cnt, $dl_tot ) = ( 0, 0 );
+sub init_win32_ie_events {
+    $dl_cnt = 0; $dl_tot = 0;
+    $DEBUG and print "[init_win32_ie_events] ($dl_cnt/$dl_tot)\n";
+}
+
+sub win32_ie_events {
+    my( $agent, $event, @args ) = @_;
+
+    CASE: {
+        $event eq 'DownloadBegin' and do {
+            $dl_cnt++;
+            last CASE;
+        };
+
+        $event eq 'DownloadComplete' and do {
+            $dl_cnt--; $dl_tot++;
+            last CASE;
+        };
+
+        $event eq 'ProgressChange' && $dl_tot && $agent->readyState >= 3 &&
+        $args[0] == 0 && $args[1] == 0 and do {
+#print "[PC $agent->{readyState} $ev_first] @args ($dl_cnt/$dl_tot)\n";
+            Win32::OLE->QuitMessageLoop;
+            last CASE;
+        }
+    }
+    $DEBUG and print "[$event $agent->{readyState}] @args ($dl_cnt/$dl_tot)\n";
+}
+}
+
+=head2 $self->_wait_while_busy( $nowait )
+
+Start hooking into the browser events.
 
 =cut
 
 sub _wait_while_busy {
-    my $self = shift;
+    my( $self, $nowait ) = @_;
     my $agent = $self->{agent};
 
-    # The documentation isn't clear on this.
-    # The DocumentComplete event roughly says:
-    # the event gets fired (for each frame) after ReadyState == 4
-    # we might need to check if the first one has frames
-    # and do some more checking.
-
-#    while ( $agent->{Busy} == 1 ) { $SLEEP and sleep( $SLEEP ) }
-#    return unless $agent->{ReadyState};
-    while ( $agent->{ReadyState} <= $READYSTATE ) {
-        $SLEEP and sleep( $SLEEP );
+    unless ( $nowait ) {
+        init_win32_ie_events();
+        Win32::OLE->MessageLoop; # The handler call QuitMessageLoop to return
     }
 
     $self->{ $_ } = undef for qw( forms cur_form links images );
