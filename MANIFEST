@@ -1,7 +1,10 @@
-MANIFEST                   $Id: MANIFEST 381 2005-08-07 10:00:06Z abeltje $
+MANIFEST                   $Id: MANIFEST 397 2005-08-24 15:09:32Z abeltje $
 README
 Changes
 Makefile.PL
+examples/luckygoogle.pl
+examples/test-smoke-org.pl
+examples/weather.pl
 lib/Win32/IE/Form.pm
 lib/Win32/IE/Image.pm
 lib/Win32/IE/Input.pm

@@ -1,9 +1,9 @@
 package Win32::IE::Mechanize;
 use strict;
 
-# $Id: Mechanize.pm 389 2005-08-12 17:24:26Z abeltje $
-use vars qw( $VERSION $SLEEP $DEBUG );
-$VERSION = '0.009_15';
+# $Id: Mechanize.pm 403 2005-08-26 11:59:52Z abeltje $
+use vars qw( $VERSION $DEBUG );
+$VERSION = '0.009_17';
 
 =head1 NAME
 
@@ -125,7 +125,7 @@ sub new {
     } grep exists $ie_property{ lc $_ } => keys %opt };
 
     # some more options not for IE
-    $self->{ $_ } = exists $opt{ $_ } ? $opt{ $_ } : undef
+    $self->{ $_ } = exists $opt{ $_ } ? $opt{ $_ } : $self->{ $_ }
         for qw( quiet onwarn onerror );
 
     exists $opt{ $_ } and  $self->{ $_ } = $opt{ $_ }
@@ -210,7 +210,7 @@ Close the InternetExplorer instance.
 
 =cut
 
-sub close { $_[0]->{agent}->quit; $_[0]->{agent} = undef; }
+sub close { $_[0]->{agent} and $_[0]->{agent}->quit; $_[0]->{agent} = undef; }
 
 =head2 $ie->open()
 
@@ -273,8 +273,8 @@ loaded.
 =cut
 
 sub reload {
-     $_[0]->agent->Refresh;
-     $_[0]->_wait_while_busy;
+    $_[0]->agent->Refresh;
+    $_[0]->_wait_while_busy;
 }
 
 =head2 $ie->back()
@@ -379,7 +379,7 @@ sub _ct_from_registry {
 
 =head2 $ie->current_form
 
-Returns the current form as an C<Win32::IE::Form> object.
+Returns the current form as an L<Win32::IE::Form> object.
 
 =cut
 
@@ -464,11 +464,11 @@ sub follow_link {
 =head2 $ie->find_link( [%options] )
 
 This method finds a link in the currently fetched page. It returns a
-L<Win32::IE::Link> object which describes the link.  (You'll probably
+L<Win32::IE::Link> object which describes the link.  (You will probably
 be most interested in the C<url()> property.)  If it fails to find a
 link it returns undef.
 
-You can take the URL part and pass it to the C<get()> method.  If that's
+You can take the URL part and pass it to the C<get()> method.  If that is
 your plan, you might as well use the C<follow_link()> method directly,
 since it does the C<get()> for you automatically.
 
@@ -492,7 +492,7 @@ link with text that has "download" anywhere in it, regardless of case, use
 
     $mech->find_link( text_regex => qr/download/i );
 
-Note that the text extracted from the page's links are trimmed.  For
+Note that the text extracted from the pages links are trimmed.  For
 example, C<< <a> foo </a> >> is stored as 'foo', and searching for
 leading or trailing spaces will fail.
 
@@ -500,12 +500,12 @@ leading or trailing spaces will fail.
 
 Matches the URL of the link against I<string> or I<regex>, as appropriate.
 The URL may be a relative URL, like F<foo/bar.html>, depending on how
-it's coded on the page.
+it is coded on the page.
 
 =item * C<< url_abs => string >> and C<< url_abs_regex => regex >>
 
 Matches the absolute URL of the link against I<string> or I<regex>,
-as appropriate.  The URL will be an absolute URL, even if it's relative
+as appropriate.  The URL will be an absolute URL, even if it is relative
 in the page.
 
 =item * C<< name => string >> and C<< name_regex => regex >>
@@ -532,7 +532,7 @@ as a numeric modifier.  For example,
 C<< text => "download", n => 3 >> finds the 3rd link which has the
 exact text "download".
 
-If C<n> is not specified, it defaults to 1.  Therefore, if you don't
+If C<n> is not specified, it defaults to 1.  Therefore, if you do not
 specify any parms, this method defaults to finding the first link on the
 page.
 
@@ -560,11 +560,15 @@ sub find_link {
     my $nmatches = 0;
     my @matches;
     for my $link ( @links ) {
+	$DEBUG and printf "url{%s} ", $link->url;
         if ( _match_any_link_parms($link,\%parms) ) {
             if ( $wantall ) {
+                $DEBUG and print "\tpushed\n";
                 push( @matches, $link );
             } else {
                 ++$nmatches;
+                $DEBUG and printf "\t%s\n", $nmatches >= $parms{n}
+                                  ? "returned" : "skipped";
                 return $link if $nmatches >= $parms{n};
             }
         }
@@ -893,6 +897,7 @@ sub form_name {
 
     my $name = shift or return undef;
     $self->_extract_forms unless defined $self->{forms};
+
     my @matches = grep $_->name && $_->name eq $name => @{ $self->{forms} };
     if ( @matches ) {
         $self->warn( "There are " . scalar @matches . "forms named '$name'. " .
@@ -984,6 +989,7 @@ sub set_fields {
     my $self = shift;
 
     my $form = $self->current_form;
+    $DEBUG and print "set_fields on $form\n";
     my %opt = @_ ? UNIVERSAL::isa( $_[0], 'HASH' ) ? %{ $_[0] } : @_ : ();
     while ( my( $fname, $value ) = each %opt ) {
         if ( ref $value eq 'ARRAY' ) {
@@ -1109,7 +1115,7 @@ sub untick {
     $self->tick( @_[0, 1], undef );
 }
 
-=head2 $mech->value( $name, $number )
+=head2 $ie->value( $name, $number )
 
 Given the name of a field, return its value. This applies to the current
 form (as set by the C<form()> method or defaulting to the first form on
@@ -1612,7 +1618,7 @@ sub _extract_images {
     return wantarray ? @{ $self->{forms} } : $self->{forms};
 }
 
-{
+{ # Block ends after handle_ie_events
 
 =begin internals
 
@@ -1648,14 +1654,15 @@ B<DWebBrowserEvents2> interface.
 
 =cut
 
-our( $dl_cnt, $dl_tot ) = ( 0, 0 );
+our( $dl_cnt, $dl_tot, $events_ok ) = ( 0, 0, 0 );
 sub init_win32_ie_events {
     $dl_cnt = 0; $dl_tot = 0;
-    $DEBUG and print "[init_win32_ie_events] ($dl_cnt/$dl_tot)\n";
+    $DEBUG and print "[$$ init_win32_ie_events] ($dl_cnt/$dl_tot)\n";
 }
 
 sub win32_ie_events {
     my( $agent, $event, @args ) = @_;
+    $events_ok++ or init_win32_ie_events();
 
     CASE: {
         $event eq 'DownloadBegin' and do {
@@ -1668,14 +1675,15 @@ sub win32_ie_events {
             last CASE;
         };
 
-        $event eq 'ProgressChange' && $dl_tot && $agent->readyState >= 3 &&
-        $args[0] == 0 && $args[1] == 0 and do {
+        $event eq 'ProgressChange' && $dl_tot && $dl_cnt == 0 &&
+        $agent->readyState >= 3 && $args[0] == 0 && $args[1] == 0 and do {
 #print "[PC $agent->{readyState} $ev_first] @args ($dl_cnt/$dl_tot)\n";
-            Win32::OLE->QuitMessageLoop;
+            $events_ok = 0;
             last CASE;
         }
     }
     $DEBUG and print "[$event $agent->{readyState}] @args ($dl_cnt/$dl_tot)\n";
+    $events_ok or Win32::OLE->QuitMessageLoop;
 }
 }
 
@@ -1690,7 +1698,6 @@ sub _wait_while_busy {
     my $agent = $self->{agent};
 
     unless ( $nowait ) {
-        init_win32_ie_events();
         Win32::OLE->MessageLoop; # The handler call QuitMessageLoop to return
     }
 

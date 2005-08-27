@@ -5,15 +5,16 @@ use Cwd;        # These help the cygwin tests
 require Win32;
 my $base = Win32::GetCwd();
 
-# $Id: field.t 381 2005-08-12 01:34:10Z abeltje $
+# $Id: field.t 397 2005-08-24 15:02:41Z abeltje $
 
 use Test::More;
 
 plan $^O =~ /MSWin32|cygwin/i
-    ? (tests => 12) : (skip_all => "This is not MSWin32!");
+    ? (tests => 20) : (skip_all => "This is not MSWin32!");
 
 use_ok 'Win32::IE::Mechanize';
 $Win32::IE::Mechanize::DEBUG = $Win32::IE::Mechanize::DEBUG = $ENV{WIM_DEBUG};
+@_ and diag "Testing Win32::IE::Mechanize $Win32::IE::Mechanize::VERSION";
 
 local $^O = 'MSWin32';
 my $uri = URI::file->new_abs( "$base/t/field.html" )->as_string;
@@ -50,4 +51,25 @@ ok $ie->get( $uri ), "Fetched $uri";
        "dingo(2) => boingo";
 }
 
+{
+    $ie->quiet( 0 );
+    ok my $form = $ie->form_name( 'encaps' ), "Found form";
+    ok my $name = $form->find_input( 'name' ), "Found name input";
+    ok $name->value( 'Abe Timmerman' ), "set name";
+    is $ie->field( 'name' ), 'Abe Timmerman', "name verified ok";
+    $ie->set_fields( name => 'abeltje' );
+    is $ie->field( 'name' ), 'abeltje', "set_field()";
+
+    ok $ie->submit_form(
+        form_name => 'encaps',
+        fields    => {
+            name    => 'Abe Timmerman',
+            address => 'ztreet.xs4all.nl',
+        },
+    ), "submit_form(encaps)";
+
+    like $ie->uri, qr/\b\Qname=Abe+Timmerman\E\b/, "name like in uri";
+    like $ie->uri, qr/\b\Qaddress=ztreet.xs4all.nl\E\b/, "address like in uri";
+}
+    
 $ENV{WIM_VISIBLE} or $ie->close;

@@ -2,9 +2,9 @@ package Win32::IE::Link;
 use strict;
 use warnings;
 
-# $Id: Link.pm 241 2005-08-07 07:07:08Z abeltje $
+# $Id: Link.pm 401 2005-08-26 11:55:50Z abeltje $
 use vars qw( $VERSION );
-$VERSION = '0.003';
+$VERSION = '0.005';
 
 =head1 NAME Win32::IE::Link
 
@@ -55,13 +55,52 @@ sub new {
     bless \( my $self = shift ), $class;
 }
 
+=head2 $link->attrs
+
+Returns hash ref of all the attributes and attribute values in the tag.
+
+=cut
+
+sub attrs {
+    my $self = ${ $_[0] };
+
+    my $attrs = { };
+    for ( my $ i = 0; $i < $self->attributes->length; $i++ ) {
+        my $attr = $self->attributes( $i );
+        $attrs->{ $attr->nodeName } = $attr->nodeValue;
+    }
+
+    return $attrs;
+}
+
 =head2 $link->url
+
+Returns the url from the link.
+
+B<NOTE>: The IE automation object only shows the interpreted results
+in the attributs collection, so url() and url_abs() will be the same.
+
+=cut
+
+sub url {
+    my $self = $_[0];
+    my $link = $$self;
+
+    my $attrs = $self->attrs;
+    if ( $link->{tagName} =~ /^I?FRAME$/ ) {
+        return defined $attrs->{src} ? $attrs->{src} : $link->{src};
+    } else {
+        return defined $attrs->{href} ? $attrs->{href} : $link->{href};
+    }
+}
+
+=head2 $link->url_abs
 
 Returns the url from the link.
 
 =cut
 
-sub url {
+sub url_abs {
     my $self = ${ $_[0] };
 
     if ( $self->{tagName} =~ /^I?FRAME$/ ) {
@@ -79,7 +118,9 @@ Text of the link.
 
 sub text {
     my $self = ${ $_[0] };
-    return defined $self->{innerHTML} ? $self->innerHTML : '';
+    return defined $self->{innerText}
+        ? $self->{innerText}
+        : defined $self->{innerHTML} ? $self->innerHTML : '';
 }
 
 =head2 $link->name

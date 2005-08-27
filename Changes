@@ -10,6 +10,79 @@ The filelists have a short symbolic indicator:
 
 Enjoy!
 ___________________________________________________________________________
+[   410] By: abeltje                          on 2005-08-26 14:02:05 +0200
+        Log: * [CHANGE]
+	       * jazz the examples up a bit
+	       + add some POD and comments
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/examples/luckygoogle.pl,
+	     /Win32-IE-Mechanize/examples/test-smoke-org.pl,
+	     /Win32-IE-Mechanize/examples/weather.pl
+___________________________________________________________________________
+[   409] By: abeltje                          on 2005-08-26 13:59:52 +0200
+        Log: * [FIX]
+	       * check for the existance of the agent before calling
+		 Quit() on it in the close() method
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   408] By: abeltje                          on 2005-08-26 13:55:50 +0200
+        Log: * [FIX]
+	       * Try to return innerText before falling back to innerHTML
+		 for the text() method
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Link.pm
+___________________________________________________________________________
+[   405] By: abeltje                          on 2005-08-24 21:04:00 +0200
+        Log: * [AUTOCOMMIT] Win32::IE::Mechanize 0.009_16
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/Changes
+___________________________________________________________________________
+[   404] By: abeltje                          on 2005-08-24 17:09:32 +0200
+        Log: * [ADD]
+	       + a new example: luckygoogle.pl
+	       + all examples to the distribution
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           + /Win32-IE-Mechanize/examples/luckygoogle.pl
+           ! /Win32-IE-Mechanize/MANIFEST
+___________________________________________________________________________
+[   403] By: abeltje                          on 2005-08-24 17:05:50 +0200
+        Log: * [CHANGE]
+	       * fix a bug in the browserevents handling
+	       * do some POD cleanup
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Mechanize.pm
+___________________________________________________________________________
+[   402] By: abeltje                          on 2005-08-24 17:02:41 +0200
+        Log: * [CHANGE]
+	       * fiddle more with tests
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/t/01construct.t,
+	     /Win32-IE-Mechanize/t/click_link.html,
+	     /Win32-IE-Mechanize/t/click_link.t,
+	     /Win32-IE-Mechanize/t/field.html,
+	     /Win32-IE-Mechanize/t/field.t
+___________________________________________________________________________
+[   401] By: abeltje                          on 2005-08-24 17:01:08 +0200
+        Log: * [CHANGE]
+	       + add support for the attrs() and url_abs() methods
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Link.pm
+___________________________________________________________________________
+[   400] By: abeltje                          on 2005-08-24 12:43:44 +0200
+        Log: * [FIX]
+	       * $form->name could be found as an attribute
+	       * change from the all() collection to the elements()
+		 collection to find *all* elements within the <form>
+		 element. (That solves the google problem)
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/lib/Win32/IE/Form.pm
+___________________________________________________________________________
+[   395] By: abeltje                          on 2005-08-12 21:20:45 +0200
+        Log: * [AUTOCOMMIT] Win32::IE::Mechanize 0.009_15
+        Url: http://yola/repos/tools/Win32-IE-Mechanize
+           ! /Win32-IE-Mechanize/Changes
+___________________________________________________________________________
 [   392] By: abeltje                          on 2005-08-12 19:24:26 +0200
         Log: * [CHANGE]
 	       * code cleanup

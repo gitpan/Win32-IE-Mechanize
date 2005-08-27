@@ -2,9 +2,9 @@ package Win32::IE::Form;
 use strict;
 use warnings;
 
-# $Id: Form.pm 381 2005-08-12 10:10:09Z abeltje $
+# $Id: Form.pm 397 2005-08-24 10:43:44Z abeltje $
 use vars qw( $VERSION );
-$VERSION = '0.004';
+$VERSION = '0.005';
 
 =head1 NAME
 
@@ -130,7 +130,7 @@ sub name {
     my $self = shift;
     my $form = $$self;
 
-    return $form->{name}
+    return ref $form->{name} ? $self->attr( 'name' ) : $form->{name};
 }
 
 =head2 $form->inputs()
@@ -146,19 +146,22 @@ sub inputs {
 
     my $ok_tags = join "|", qw( BUTTON INPUT SELECT TEXTAREA );
     my( @inputs, %radio_seen );
-    $form->all->length or return;
-    for ( my $i = 0; $i < $form->all->length; $i++ ) {
-        next unless $form->all( $i ) &&
-                    $form->all( $i )->tagName =~ /$ok_tags/i;
+    $form->elements->length or return;
+    for ( my $i = 0; $i < $form->elements->length; $i++ ) {
+        next unless $form->elements( $i );
+        next unless grep /tagName/ => keys %{ $form->elements( $i ) };
+        next unless $form->elements( $i )->tagName =~ /$ok_tags/i;
 
-        if ( lc( $form->all( $i )->tagName ) eq 'input' &&
-             lc( $form->all( $i )->type    ) eq 'radio' ) {
+        my $hastype = grep /^type$/i => keys %{ $form->elements( $i ) };
+        if ( lc( $form->elements( $i )->tagName ) eq 'input' &&
+            $hastype                                            &&
+            lc( $form->elements( $i )->type    ) eq 'radio' ) {
 
-            $radio_seen{ $form->all( $i )->name }++ or
-                push @inputs, Win32::IE::Input->new( $form->all( $i ) );
+            $radio_seen{ $form->elements( $i )->name }++ or
+                push @inputs, Win32::IE::Input->new($form->elements( $i ));
 
         } else {
-            push @inputs, Win32::IE::Input->new( $form->all( $i ) );
+            push @inputs, Win32::IE::Input->new($form->elements( $i ));
         }
     }
 
@@ -208,6 +211,7 @@ sub find_input {
         return @res;
     } else {
         $index ||= 1;
+
         for my $input ( $self->inputs ) {
             if ( defined $name ) {
                 $input->name or next;
